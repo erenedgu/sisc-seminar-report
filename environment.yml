@@ -1,0 +1,7 @@
+name: thesis
+channels:
+  - conda-forge
+dependencies:
+  - tectonic=0.16.9
+  - pytinytex
+  - perl

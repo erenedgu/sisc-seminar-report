@@ -1,0 +1,170 @@
+\documentclass{mimosis}
+
+\usepackage{metalogo}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Some of my favourite personal adjustments
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% These are the adjustments that I consider necessary for typesetting
+% a nice thesis. However, they are *not* included in the template, as
+% I do not want to force you to use them.
+
+% This ensures that I am able to typeset bold font in table while still aligning the numbers
+% correctly.
+\usepackage{etoolbox}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Hyperlinks & bookmarks
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\usepackage[%
+  colorlinks = true,
+  citecolor  = red,
+  linkcolor  = RoyalBlue,
+  urlcolor   = RoyalBlue,
+  unicode,
+  ]{hyperref}
+
+\usepackage{bookmark}
+\usepackage{pdfpages}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Bibliography
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% I like the bibliography to be extremely plain, showing only a numeric
+% identifier and citing everything in simple brackets. The first names,
+% if present, will be initialized. DOIs and URLs will be preserved.
+
+\usepackage[%
+  autocite     = plain,
+  backend      = bibtex,
+  doi          = true,
+  url          = true,
+  giveninits   = true,
+  hyperref     = true,
+  maxbibnames  = 99,
+  maxcitenames = 99,
+  sortcites    = true,
+  style        = numeric,
+  ]{biblatex}
+
+\input{bibliography-mimosis}
+\addbibresource{thesis.bib}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Fonts
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\ifxetexorluatex
+  \usepackage{unicode-math}
+  \setmainfont{texgyrepagella-regular.otf}[
+    BoldFont     = texgyrepagella-bold.otf,
+    ItalicFont   = texgyrepagella-italic.otf,
+    BoldItalicFont = texgyrepagella-bolditalic.otf
+  ]
+  \setmathfont{texgyrepagella-math.otf}
+  \setmonofont{texgyrecursor-regular.otf}[
+    BoldFont     = texgyrecursor-bold.otf,
+    ItalicFont   = texgyrecursor-italic.otf,
+    BoldItalicFont = texgyrecursor-bolditalic.otf,
+    Scale        = MatchLowercase
+  ]
+\else
+  \usepackage{tgpagella}
+  \usepackage{tgcursor}
+  \singlespacing
+\fi
+
+\newacronym[description={Principal component analysis}]{PCA}{PCA}{principal component analysis}
+\newacronym                                            {SNF}{SNF}{Smith normal form}
+\newacronym[description={Topological data analysis}]   {TDA}{TDA}{topological data analysis}
+
+\newglossaryentry{LaTeX}{%
+  name        = {\LaTeX},
+  description = {A document preparation system},
+  sort        = {LaTeX},
+}
+
+\newglossaryentry{Real numbers}{%
+  name        = {$\real$},
+  description = {The set of real numbers},
+  sort        = {Real numbers},
+}
+
+\makenoidxglossaries
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Ordinals
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\makeatletter
+\@ifundefined{st}{%
+  \newcommand{\st}{\textsuperscript{\textup{st}}\xspace}
+}{}
+\@ifundefined{rd}{%
+  \newcommand{\rd}{\textsuperscript{\textup{rd}}\xspace}
+}{}
+\@ifundefined{nd}{%
+  \newcommand{\nd}{\textsuperscript{\textup{nd}}\xspace}
+}{}
+\makeatother
+
+\renewcommand{\th}{\textsuperscript{\textup{th}}\xspace}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Incipit
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Set your thesis type: \masterthesistrue or \bachelorthesistrue
+% For project reports, leave both false — the academic integrity declaration will be omitted.
+\newif\ifmasterthesis
+\newif\ifbachelorthesis
+% \masterthesistrue  % <-- change this
+
+\title{Your Thesis Title}
+\newcommand{\germantitle}{Deutscher Titel der Thesis}
+\author{Your Name}
+
+\begin{document}
+
+\frontmatter
+  \include{sources/title}
+  \include{sources/abstract}
+  \include{sources/acknowledgements}
+  \include{sources/declarationofownwork}
+
+  \tableofcontents
+  \listoffigures
+  \addcontentsline{toc}{chapter}{\listfigurename}
+  \listoftables
+  \addcontentsline{toc}{chapter}{\listtablename}
+
+  \begingroup
+    \let\clearpage\relax
+    \glsaddall
+    \printnoidxglossary[type=\acronymtype]
+    \newpage
+    \printnoidxglossary
+  \endgroup
+
+  \include{sources/conventions}
+
+\mainmatter
+  \include{sources/introduction}
+  \include{sources/relatedwork}
+  \include{sources/ownwork}
+  \include{sources/evaluation}
+  \include{sources/summaryandfuturework}
+
+\appendix
+  \include{sources/appendix}
+
+% This ensures that the subsequent sections are being included as root
+% items in the bookmark structure of your PDF reader.
+\bookmarksetup{startatroot}
+\backmatter
+  \printbibliography
+
+\end{document}

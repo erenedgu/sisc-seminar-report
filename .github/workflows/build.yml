@@ -1,0 +1,89 @@
+name: Build Thesis
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-tectonic:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up micromamba
+        uses: mamba-org/setup-micromamba@v2
+        with:
+          environment-file: environment.yml
+          cache-environment: true
+
+      - name: Cache Tectonic packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/Tectonic
+          key: tectonic-${{ runner.os }}-${{ hashFiles('thesis.tex') }}
+          restore-keys: tectonic-${{ runner.os }}-
+
+      - name: Build thesis
+        shell: micromamba-shell {0}
+        run: tectonic -X compile thesis.tex
+
+      - name: Push PDF to pdf-tectonic branch
+        if: github.ref == 'refs/heads/main'
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git checkout --orphan pdf-tectonic
+          git reset
+          git add -f thesis.pdf
+          git commit -m "Update thesis PDF"
+          git push --force origin pdf-tectonic
+
+  build-tinytex:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up micromamba
+        uses: mamba-org/setup-micromamba@v2
+        with:
+          environment-file: environment.yml
+          cache-environment: true
+
+      - name: Expose conda prefix
+        shell: micromamba-shell {0}
+        run: echo "CONDA_PREFIX=$CONDA_PREFIX" >> $GITHUB_ENV
+
+      - name: Cache TinyTeX
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.CONDA_PREFIX }}/share/tinytex
+          key: tinytex-${{ runner.os }}-${{ hashFiles('tex-packages.txt') }}
+
+      - name: Set up TinyTeX
+        shell: micromamba-shell {0}
+        run: python thesis.py setup --tinytex
+
+      - name: Build thesis
+        shell: micromamba-shell {0}
+        run: |
+          source "$CONDA_PREFIX/etc/conda/activate.d/tinytex.sh"
+          python thesis.py build
+
+      - name: Push PDF to pdf-tinytex branch
+        if: github.ref == 'refs/heads/main'
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git checkout --orphan pdf-tinytex
+          git reset
+          git add -f thesis.pdf
+          git commit -m "Update thesis PDF"
+          git push --force origin pdf-tinytex

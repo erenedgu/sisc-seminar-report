@@ -1,0 +1,3 @@
+[doc]
+name = "thesis"
+entrypoint = "thesis.tex"

@@ -1,0 +1,10 @@
+glossaries
+hyphen-german
+doublestroke
+babel-german
+glossaries-german
+glossaries-french
+glossaries-english
+relsize
+tex-gyre
+tex-gyre-math

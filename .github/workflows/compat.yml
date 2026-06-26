@@ -1,0 +1,60 @@
+name: Cross-platform Compatibility
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - environment.yml
+      - thesis.py
+      - tex-packages.txt
+      - .latexmkrc
+      - Tectonic.toml
+  schedule:
+    - cron: '0 0 1 * *'  # monthly
+
+jobs:
+  tectonic:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up micromamba
+        uses: mamba-org/setup-micromamba@v2
+        with:
+          environment-file: environment.yml
+          cache-environment: true
+
+      - name: Build thesis
+        run: micromamba run -n thesis tectonic -X compile thesis.tex
+
+  tinytex:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up micromamba
+        uses: mamba-org/setup-micromamba@v2
+        with:
+          environment-file: environment.yml
+          cache-environment: true
+
+      - name: Cache TinyTeX
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.MAMBA_ROOT_PREFIX }}/envs/thesis/share/tinytex
+          key: tinytex-${{ runner.os }}-${{ hashFiles('tex-packages.txt') }}
+
+      - name: Set up TinyTeX
+        run: micromamba run -n thesis python thesis.py setup --tinytex
+
+      - name: Build thesis
+        run: micromamba run -n thesis python thesis.py build
