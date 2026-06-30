@@ -1,13 +1,35 @@
 \chapter{Evaluation}
 \label{ch:evaluation}
 
-This chapter evaluates your contribution against the research questions stated in Chapter~\ref{ch:introduction}. Define clear evaluation criteria before presenting results — what does success look like?\footnote{A good evaluation is systematic: it states what is being measured, how, and why that measure is meaningful.}
+\begin{itemize}
+  \item Testing the Necessity of UQ in Our Specific Case
+  \item Testing the validity of using time-to-solution as a proxy for computational energy costs.
+\end{itemize}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Experimental Setup}
 \label{sec:experimental-setup}
 
-Describe the conditions under which your evaluation was conducted. Include datasets, baselines, metrics, and any relevant hardware or software configuration.\footnote{Be precise enough that someone else could replicate your evaluation.}
+\begin{itemize}
+  \item Testing the Necessity of UQ in Our Specific Case
+      \begin{itemize}
+          \item Five different ensembles with noise levels $\sigma \in \{0.05, 0.1, 0.2, 0.5, 1.0\}$ meters were created.
+          \item Each ensemble consisted of 100 equiprobable realizations.
+          \item The Quantity of Interest (QoI) was the water depth at [925.0, 605.0].
+          \item The mean, standard deviation, and coefficient of variation (CV) were calculated for each ensemble.
+      \end{itemize}
+  \item Testing the validity of using time-to-solution as a proxy for computational energy costs.
+      \begin{itemize}
+          \item Three different versions of the original DEM were created with different resolutions. Cell sizes were namely 10.0~m, 12.0~m, 15.0~m, and 20.0~m. (Side by side figure?)
+          \item For each version, ensembles with 100 iterations were created with a zero noise level of $\sigma = 0.0$ meters.
+          \item The mean, standard deviation, and coefficient of variation (CV) were calculated for each ensemble.
+      \end{itemize}
+  \item Uncertainty Propagation of Energy Consumption
+      \begin{itemize}
+          \item The same ensembles ($\sigma \in \{0.05, 0.1, 0.2, 0.5, 1.0\}$ meters) from the first experiment were used to assess the effects of uncertainty propagation in energy consumption.
+          \item The mean, standard deviation, and coefficient of variation (CV) were calculated for each ensemble.
+      \end{itemize}
+\end{itemize}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Metrics}
@@ -15,25 +37,98 @@ Describe the conditions under which your evaluation was conducted. Include datas
 
 Define the metrics you use to assess your approach. Explain why each metric is appropriate for your research questions.
 
+\begin{itemize}
+  \item Metrics that are tracked
+      \begin{itemize}
+          \item Maximum Water Depth (m) at [925.0, 605.0]
+          \item Time-to-Solution (s)
+          \item Total Attributed Energy (J)
+      \end{itemize}
+  \item Metrics for statistical evaluation
+      \begin{itemize}
+          \item Mean
+          \item Standard Deviation
+          \item Coefficient of Variation (CV)
+          \item Interquartile Range (IQR)
+          \item R squared ($R^2$)
+      \end{itemize}
+\end{itemize}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Results}
 \label{sec:eval-results}
 
 Present the evaluation results. Use tables and figures to summarise comparisons across conditions or baselines.
 
-\begin{table}[ht]
+\subsection{Neccessity of UQ in Our Specific Case}
+
+\begin{table}[H]
   \centering
-  \begin{tabular}{lcc}
+  \begin{tabular}{cccc}
     \toprule
-    \textbf{Method} & \textbf{Metric A} & \textbf{Metric B} \\
+    \textbf{$\sigma_{input}$ (m)} & \textbf{Mean (m)} & \textbf{Std. Dev (m)} & \textbf{CV (\%)} \\
     \midrule
-    Baseline   & 0.00 & 0.00 \\
-    Your method & 0.00 & 0.00 \\
+    0.05 & 0.739 & $\pm 0.050$ & 6.78\% \\
+    0.1  & 0.756 & $\pm 0.110$ & 14.50\% \\
+    0.2  & 0.774 & $\pm 0.206$ & 26.61\% \\
+    0.5  & 0.880 & $\pm 0.446$ & 50.71\% \\
+    1.0  & 1.101 & $\pm 0.817$ & 74.21\% \\
     \bottomrule
   \end{tabular}
-  \caption{Comparison of your method against the baseline across evaluation metrics.}
-  \label{tab:eval-results}
+  \caption{Impact of input uncertainty $\sigma_{input}$ on the resulting water depth measurements.}
+  \label{tab:uq-results}
 \end{table}
+
+(Add a figure showing the difference in DEMs when added noise? How, without a gif? Side by side?)
+
+
+\subsection{Validity of Using Time-to-Solution as a Proxy for Computational Energy Consumption}
+
+\begin{itemize}
+  \item Energy ($E$) is the product of power ($P$) and time ($t$). So we need a linear relationship between time and energy ~\eqref{eq:energy-time}. to use time as a proxy for energy. 
+\end{itemize}
+
+\begin{equation}
+E = P \cdot t
+\label{eq:energy-time}
+\end{equation}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=1\textwidth]{images/results/time/proxy_fallacy.png}
+  \caption{Total energy consumption vs. execution duration for all iterations}
+  \label{fig:proxy-fallacy}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=1\textwidth]{images/results/time/proxy_fallacy_clean.png}
+  \caption{Total energy consumption vs. execution duration for all clean iterations}
+  \label{fig:proxy-fallacy-clean}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=1\textwidth]{images/results/time/power_signature.png}
+  \caption{Average Cumulative Energy-Time Plot of Ensembles with Different resolutions}
+  \label{fig:power-signature}
+\end{figure}
+
+\subsection{Uncertainty Propagation of Energy Consumption}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=1\textwidth]{images/results/uq/energy_uq_stripplot.png}
+  \caption{Raw distribution of total energy consumption for each topographic noise level}
+  \label{fig:energy-uq-stripplot}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=1\textwidth]{images/results/uq/energy_uq_boxplot.png}
+  \caption{Raw distribution of total energy consumption for each topographic noise level}
+  \label{fig:energy-uq-boxplot}
+\end{figure}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Discussion}
