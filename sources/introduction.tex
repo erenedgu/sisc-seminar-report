@@ -1,51 +1,47 @@
 \chapter{Introduction}
 \label{ch:introduction}
 
-\begin{itemize}
-    \item Comparison of Original vs Noisy DEMs
-    \begin{itemize}
-        \item Original DEM and Noisy DEM next to each other (add figure)
-        \item When comparing an original DEM to a noisy DEM, both can be considered real.
-        \item Because DEMs are acquired from different sensors, they may have different resolutions and noise characteristics. (add source)
-    \end{itemize}
-    \item Introducing Uncertainty Quantification (UQ)
-    \begin{itemize}
-        \item Introduce the problem (assessing the risk at a specific location during a flood)
-        \item Briefly define UQ
-        \item Explain why UQ is important in the context of mass flow simulations.
-    \end{itemize}
-\end{itemize}
+ Natural hazards like rapid flow-like landslides and river floods frequently cause deaths, economic devastation, and environmental destruction worldwide \cite{Zhao2020, Meadows2024}. To assess the risks of these hazards, geohazard studies rely on computational flood models \cite{Zhao2020, Meadows2024}. An essential component in developing any of these computational models is the Digital Elevation Model (DEM). DEMs represent the topography of the terrain where the slide or flow occurs \cite{Zhao2020}.
+
+Despite DEMs being essential components, these simulations are susceptible to even small vertical inaccuracies in the topographic data \cite{Meadows2024}. Uncertainty Quantification (UQ) is the process used to evaluate how such input errors propagate through a model to affect the final simulation results \cite{Zhao2020}. However, in typical simulation-based hazard assessments, the effect of the DEM error is rarely considered in uncertainty propagation \cite{Zhao2020}. Despite the fact that ignoring DEM uncertainty can result in serious biases in risk management choices, in some cases the topography data is regarded as reliable \cite{Zhao2020}.
+
+DEMs are generated using various spaceborne sensors, such as Synthetic Aperture Radar (SAR) or stereoscopic imaging \cite{Meadows2024}. These sensors penetrate vegetation and built infrastructure to varying degrees \cite{Meadows2024}. As a result, spaceborne sensors frequently generate a positive vertical bias, where ground elevations are overestimated \cite{Meadows2024}. Additionally, DEMs naturally have variable resolutions and vertical inaccuracies due to these diverse sensor technologies and features. These vertical errors cause misleading hazard maps and exposure evaluations later in the analysis by acting as artificial sinks or obstructions that mistakenly retain or divert simulated flows \cite{Meadows2024}.
+
+Stochastic simulation is an efficient method to describe the uncertainty in order to overcome these constraints \cite{Zhao2020}. By treating the DEM error as a random field and injecting it into the original data, researchers can generate an ensemble of equiprobable DEM realizations \cite{Oksanen2006, Zhao2020}. As a result, when comparing an original DEM with a synthetically noisy DEM, both must be regarded as alternative, equally probable representations of the actual landscape \cite{Oksanen2006}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Motivation}
 \label{sec:motivation}
 
-\begin{itemize}
-    \item The Computational Burden
-    \begin{itemize}
-        \item Generating massive ensembles requires massive computational throughput. (source?)
-        \item Running these simulations demands significant energy.
-        \item Time is being used as a proxy for energy consumption. (source?)
-    \end{itemize}
-    \item The Attribution Challenge
-    \begin{itemize}
-        \item Modern hardware often runs multiple tasks at the same time.
-        \item Hardware sensors report the total power of the card, not the energy used by a specific process.
-    \end{itemize}
-\end{itemize}
+In flood simulation UQs, hundreds or thousands of synthetic scenarios must be evaluated in order to generate the required ensembles \cite{Abbaszadeh2022, Fraehr2023, Zhao2020}. Multiplying this effort across a large ensemble creates a massive computing demand that is beyond the capabilities of conventional supercomputers because high-fidelity numerical flood models are already computationally expensive \cite{Abbaszadeh2022, Fraehr2023}. In order to reduce the power and operating costs connected with these urban-domain simulations, the flood modeling community is searching for hardware solutions that offer better performance-per-watt, such as multi-GPU architectures. This is because running these UQ ensembles requires a significant amount of energy \cite{KhoshBinGhomash2026}.
+
+Nevertheless, execution time is still implicitly used as a proxy for computational efficiency \cite{Kang2026, Shaw2021, Aaron2023}. This ignores actual energy usage, despite the shift to power-hungry multi-GPU architectures. Instead of monitoring electrical power draw, researchers nearly tend to use runtime benchmarks and speedups to assess the performance of new GPU-accelerated solvers \cite{Kang2026, Shaw2021, Aaron2023}.
+
+For instance, overcoming computational the hardware achieves up to a 36.6-fold speedup over CPU baselines, reducing high-resolution global simulation runtimes from days to hours \cite{Kang2026}. The continuous power needed by the several A100 GPUs to reach this performance is not measured by the authors. In similar fashion, the developers of the LISFLOOD-FP 8.0 model evaluate their new GPU solvers only on the basis of "relative runtime cost," characterizing the solvers as highly efficient mainly due to their ability to execute large-scale catchment simulations "faster than real-time." \cite{Shaw2021}
+
+This reliance on the time-proxy extends across the broader geohazard domain. In landslide runout modeling, the transition to GPU architecture in the ORIN-3D model is praised for providing an "increase in efficiency of over two orders of magnitude" \cite{Aaron2023}. However, this efficiency is calculated by the fact that the fully optimized code finishes 115 times faster than its CPU counterpart \cite{Aaron2023}.
+
+The community ignores the massive peak power requirements of modern GPUs by evaluating model efficiency just based on wall-clock time and equating speed with efficiency \cite{Kang2026, Shaw2021, Aaron2023}. This leaves a gap in our understanding of the true energy footprint required to run large-scale uncertainty quantification ensembles.
+
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Research Questions}
 \label{sec:research-questions}
 
+To address the research gap identified above, this study derives the following primary research question:
+
 \begin{itemize}
-    \item How can the energy consumption of heterogeneous scientific computing workloads be accurately measured and modeled under input and execution uncertainty?
-    \begin{itemize}
-        \item What methodologies enable accurate process-level energy attribution in shared heterogeneous computing infrastructures?
-        \item To what extent can execution time serve as a proxy for energy consumption in heterogeneous CPU–GPU computing systems?
-        \item How does uncertainty in simulation inputs propagate to variability in computational energy consumption?
-    \end{itemize}
+    \item How can the energy consumption of heterogeneous scientific computing workloads be accurately measured and evaluated under input and execution uncertainty?
 \end{itemize}
+
+To comprehensively answer this problem, the research is guided by three specific sub-questions:
+\begin{itemize}
+    \item What methodologies enable accurate process-level energy attribution in shared heterogeneous computing infrastructures?
+    \item To what extent can execution time serve as a proxy for energy consumption in heterogeneous CPU–GPU computing systems?
+    \item How does uncertainty in simulation inputs propagate to variability in computational energy consumption?
+\end{itemize}
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Outline}
