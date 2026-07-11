@@ -15,14 +15,14 @@ Stochastic simulation is an efficient method to describe the uncertainty in orde
 
 In flood simulation UQs, hundreds or thousands of synthetic scenarios must be evaluated in order to generate the required ensembles \cite{Abbaszadeh2022, Fraehr2023, Zhao2020}. Multiplying this effort across a large ensemble creates a massive computing demand that is beyond the capabilities of conventional supercomputers because high-fidelity numerical flood models are already computationally expensive \cite{Abbaszadeh2022, Fraehr2023}. In order to reduce the power and operating costs connected with these urban-domain simulations, the flood modeling community is searching for hardware solutions that offer better performance-per-watt, such as multi-GPU architectures. This is because running these UQ ensembles requires a significant amount of energy \cite{KhoshBinGhomash2026}.
 
-Nevertheless, execution time is still implicitly used as a proxy for computational efficiency \cite{Kang2026, Shaw2021, Aaron2023}. This ignores actual energy usage, despite the shift to power-hungry multi-GPU architectures. Instead of monitoring electrical power draw, researchers nearly tend to use runtime benchmarks and speedups to assess the performance of new GPU-accelerated solvers \cite{Kang2026, Shaw2021, Aaron2023}.
+Nevertheless, execution time is still implicitly used as a proxy for computational efficiency \cite{Kang2026, Shaw2021, Aaron2023}. This ignores actual energy usage, despite the shift to power-hungry multi-GPU architectures. Instead of monitoring electrical power draw, researchers tend to use runtime benchmarks and speedups to assess the performance of new GPU-accelerated solvers \cite{Kang2026, Shaw2021, Aaron2023}.
 
 For instance, overcoming computational the hardware achieves up to a 36.6-fold speedup over CPU baselines, reducing high-resolution global simulation runtimes from days to hours \cite{Kang2026}. The continuous power needed by the several A100 GPUs to reach this performance is not measured by the authors. In similar fashion, the developers of the LISFLOOD-FP 8.0 model evaluate their new GPU solvers only on the basis of "relative runtime cost," characterizing the solvers as highly efficient mainly due to their ability to execute large-scale catchment simulations "faster than real-time." \cite{Shaw2021}
 
 This reliance on the time-proxy extends across the broader geohazard domain. In landslide runout modeling, the transition to GPU architecture in the ORIN-3D model is praised for providing an "increase in efficiency of over two orders of magnitude" \cite{Aaron2023}. However, this efficiency is calculated by the fact that the fully optimized code finishes 115 times faster than its CPU counterpart \cite{Aaron2023}.
 
 The community ignores the massive peak power requirements of modern GPUs by evaluating model efficiency just based on wall-clock time and equating speed with efficiency \cite{Kang2026, Shaw2021, Aaron2023}. This leaves a gap in our understanding of the true energy footprint required to run large-scale uncertainty quantification ensembles.
-
+3
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
