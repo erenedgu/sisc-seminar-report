@@ -1,19 +1,22 @@
 \chapter{Related Work}
 \label{ch:relatedwork}
 
+This chapter reviews existing literature at the intersection of hydrodynamic flood modeling, digital terrain analysis, and energy telemetry in high-performance computing (HPC). Section~\ref{sec:energy-telemetry} examines current software and hardware profiling methodologies used in hydrological simulations. Subsequently, Section~\ref{sec:limitations-related-work} analyzes the key limitations of component and node level measurement techniques, highlighting the need for process-isolated telemetry.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Contemporary Methods in Energy Profiling in HPC}
-\label{sec:related-topic-two}
+\section{Energy Telemetry Approaches in Hydrodynamic Modeling}
+\label{sec:energy-telemetry}
 
-\begin{itemize}
-    \item The Attribution Challenge
-    \begin{itemize}
-        \item Modern hardware often runs multiple tasks at the same time.
-        \item Hardware sensors report the total power of the card, not the energy used by a specific process.
-    \end{itemize}
-\end{itemize}
+While traditional HPC research in hydrology often focuses on minimizing execution time, recent literature has shifted toward profiling the energy efficiency of flood simulations and terrain analyses. To achieve this, researchers have employed a variety of software and hardware telemetry methods to capture the power consumption of hydrodynamic models.
 
-\begin{itemize}
-  \item Traditional methods, like hardware sensors or time-to-solution metrics, are insufficient for heterogeneous workloads.
-  \item Modern solutions measure energy consumption directly at the process level (e.g., Alumet).
-\end{itemize}
+To address the challenge of achieving performance portability for a 2D shallow water equation solver across diverse heterogeneous hardware (CPUs, GPUs, and FPGAs) without maintaining entirely separate code bases, researchers recently evaluated a unified SYCL implementation \cite{Buettner2025}. To measure energy across diverse hardware, the authors used the Power Measurement Toolkit (PMT) to unify different measurement APIs into a single interface \cite{Buettner2025}. PMT creates a background worker thread that periodically polls native hardware energy counters to calculate the total energy consumed over the entire simulation loop \cite{Buettner2025}. To ensure fairness, they established strict hardware boundaries by measuring only the energy of the active accelerator device while explicitly neglecting the energy of the host CPU controlling the simulation \cite{Buettner2025}.
+
+Another study evaluated the performance, usability, and energy efficiency of using high-level Python wrappers compared to native C++ for accelerating computationally bound shallow-water equation models on GPUs \cite{Holm2020}. To measure energy, the authors employed two methods depending on the hardware \cite{Holm2020}. For high-end server GPUs, they  ran the nvidia-smi utility in the background to log power draw profiles of the GPU every 20 milliseconds, while for desktop and laptop systems, they used a physical watt meter to measure the total power consumed by the entire computer \cite{Holm2020}. In both methods, they recorded the idle power draw before and after the benchmarks and subtracted it from the final measurements to isolate the simulation's active energy footprint \cite{Holm2020}.
+
+In the broader domain of digital terrain analysis, researchers aimed to accelerate the computationally and data-intensive Multiple Flow Direction (MFD) algorithm by parallelizing it across multi-core CPUs and many-core GPUs \cite{Stojanovic2019}. To evaluate the energy efficiency of their CUDA and OpenACC implementations, the authors used the MeterPU software library \cite{Stojanovic2019}. This library allowed them to directly capture and compare the total energy consumption of both the CPU and the GPU architectures during the execution of the algorithms \cite{Stojanovic2019}.
+
+Finally, a recent study investigated energy optimization strategies when using HPC to forecast floods. The researchers tested different computer cluster setups to find the most efficient way to run TELEMAC-2D, which is a program used to simulate flash floods in the Brague river \cite{AhWoane2025}. To profile energy consumption, they used a Python script based on the ska-sdp-perfmon toolkit to collect power data directly from the computer nodes \cite{AhWoane2025}. By tracking this power usage over time, they calculated the total energy needed to complete a simulation. They noted that because they measured energy at the node level, the final numbers included both the flood simulation itself and any background programs running on those same nodes at the time \cite{AhWoane2025}.
+
+\section{Limitations of Component-Level Telemetry}
+\label{sec:limitations-related-work}
+
+Despite providing valuable macro-level insights, these software and hardware telemetry methodologies exhibit limitations that compromise their precision. A fundamental challenge is that modern hardware frequently executes multiple concurrent tasks. However, native hardware sensors report the total power consumption of the component rather than isolating the energy consumed by a specific process. Consequently, measuring GPU or node energy also captures background activities not initiated by the simulation itself. While baseline subtraction techniques can successfully identify broad efficiency trends, they can also yield misleading results due to the unpredictable nature of operating system tasks. For instance, if a background spike occurs during the baseline check, the resulting baseline can be skewed.
