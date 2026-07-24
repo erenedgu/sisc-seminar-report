@@ -1,66 +1,215 @@
-\chapter{Evaluation}
+\chapter{Evaluation and Experimental Results}
 \label{ch:evaluation}
 
+% Introductory paragraph linking studies to Research Questions (RQs)
+
+\section{Study 0: Single-Run Characterization and Code-Phase Profiling}
+\label{sec:res-study0}
+
+Before scaling the framework up to execute full UQ ensembles, it is necessary to validate Alumet's ability to accurately isolate and profile the energy consumption of a single simulation run. Because SynxFlow relies on a heterogeneous execution model, its energy draw varies dynamically between the  CPU and the GPU depending on the active computational phase.
+
+The attributed GPU and CPU time-series plots were generated using the \texttt{alumet-insight} post-processing utility \cite{Correa2026AlumetInsight}.
+
+By correlating the time-series telemetry gathered by Alumet with the cumulative energy curve, the execution pipeline of a single run can be decomposed into two distinct operational phases.
+
+\subsubsection{Phase 1: CPU-Bound Initialization and I/O ($0.0\,\text{s} - 1.0\,\text{s}$)}
+
+The simulation begins with a setup phase bound entirely to the host CPU. As shown in Figure~\ref{fig:study0-cpu}, the CPU telemetry exhibits two distinct power spikes within the first second of execution, while the GPU remains idle near zero active process power. Correlating these spikes with the codebase reveals their reasons. The initial spike corresponds to data ingestion and spatial mapping, where configuration files are parsed, the DEM is loaded into memory via the \texttt{IO.Raster} module, and boundary condition arrays are defined. The second spike corresponds to file compilation, where executing \texttt{case\_input.write\_input\_files()} finalizes environmental matrices and writes the target simulation files to disk.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=1\textwidth]{images/results/study-0/CPU_energy_timeseries.png}
+    \caption{Process-attributed CPU energy time series during single-run execution. Generated using \texttt{alumet-insight} \cite{Correa2026AlumetInsight}.}
+    \label{fig:study0-cpu}
+\end{figure}
+
+As reflected on the cumulative energy curve (Figure~\ref{fig:study0-cumulative}), these two I/O operations create a discrete stair step accumulation of approximately $50\,\text{J}$ before the solving begins.
+
+\subsubsection{Phase 2: GPU-Bound Solver Execution ($3.0\,\text{s} - 8.5\,\text{s}$)}
+Following an idle memory transfer window ($1.0\,\text{s} - 2.7\,\text{s}$), the execution paradigm shifts. CPU power consumption drops to near zero as the process waits on CUDA kernel execution. Simultaneously, the GPU telemetry (Figure~\ref{fig:study0-gpu}) exhibits a sharp power ramp, maintaining sustained power draw throughout the remainder of the iteration.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=1\textwidth]{images/results/study-0/GPU_energy_timeseries.png}
+    \caption{Process-attributed GPU energy time series during single-run execution. Generated using \texttt{alumet-insight} \cite{Correa2026AlumetInsight}.}
+    \label{fig:study0-gpu}
+\end{figure}
+
+This phase corresponds directly to the dispatch of the \texttt{flood.run()} solver command, where the 2D shallow-water equations are offloaded to CUDA-enabled GPUs for massively parallel processing. On the cumulative timeline (Figure~\ref{fig:study0-cumulative}), this shows as a constant almost linear slope, driving the total single-run energy cost to approximately $205\,\text{J}$.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=1\textwidth]{images/results/study-0/single_run_cum_energy.png}
+    \caption{Cumulative energy timeline (CPU + GPU) for a single simulation run.}
+    \label{fig:study0-cumulative}
+\end{figure}
+
+
+\subsection{Results of Study 0}
+The observed behavior of the energy curves closely matches the expected execution sequence of the codebase. Therefore these results suggest that the Alumet agent, combined with the dynamic PID-tracking methodology, successfully isolates process-attributed energy across heterogeneous hardware. 
+
+Demonstrating that the framework can distinguish CPU setup spikes from continuous GPU solver draw provides confidence in the methodology, validating the approach to scale up to the large-scale Monte Carlo ensemble in the subsequent studies.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Study 1: Evaluation of the Time-to-Solution Energy Proxy}
+\label{sec:res-study1}
+
+To address the widespread reliance on execution time as a proxy for energy consumption (as highlighted in Section~\ref{sec:motivation}), this study evaluates whether wall-clock duration reliably predicts process-attributed energy draw across varying mesh workloads. Specifically, this experiment addresses Sub-question 2 by assessing the linearity of the time-energy relationship under deterministic ($\sigma = 0.0\,\text{m}$) execution conditions.
+
+\subsection{Experimental Setup}
+
+To systematically vary the computational workload while preserving similar macro-level flood dynamics, the baseline DEM was resampled into three additional spatial resolution tiers: $10.0\,\text{m}$, $12.0\,\text{m}$, $15.0\,\text{m}$, and $20.0\,\text{m}$, as illustrated in Figure~\ref{fig:dem_grid_comparison}. Adjusting the resolution forces the SynxFlow solver to process different grid dimensions, thereby creating distinct execution durations without altering the underlying physical scenario.
+
+\begin{figure}[htbp]
+    \centering
+    \begin{subfigure}[b]{0.48\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{images/results/time/dem_original.png}
+        \caption{Baseline DEM ($10.0\,\text{m}$ resolution).}
+        \label{fig:dem_original}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.48\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{images/results/time/dem_lowres1.png}
+        \caption{Resampled DEM ($12.0\,\text{m}$ resolution).}
+        \label{fig:dem_lowres1}
+    \end{subfigure}
+
+    \vspace{0.8em}
+
+    \begin{subfigure}[b]{0.48\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{images/results/time/dem_lowres2.png}
+        \caption{Resampled DEM ($15.0\,\text{m}$ resolution).}
+        \label{fig:dem_lowres2}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.48\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{images/results/time/dem_lowres3.png}
+        \caption{Resampled DEM ($20.0\,\text{m}$ resolution).}
+        \label{fig:dem_lowres3}
+    \end{subfigure}
+
+    \caption{Grid comparison of the DEM resampled across four resolutions to alter solver execution workloads.}
+    \label{fig:dem_grid_comparison}
+\end{figure}
+
+For each DEM resolution, an ensemble of 100 iterations was executed with the topographic noise strictly set to zero ($\sigma = 0.0\,\text{m}$). Setting the input noise to zero holds the physical elevation raster completely identical across all 100 iterations of a given resolution. In a deterministic computing environment, identical inputs should yield the same execution time and energy consumption. Because the terrain input remains completely constant in this experiment, any observed variability isolates execution uncertainty rather than physical terrain noise.
+
+\subsection{Statistical Framework and Metrics}
+
+To accurately reflect the dynamic execution environment and evaluate the time-proxy relationship across the resolution ensembles, the telemetry data is analyzed using the following statistical framework:
+
+\paragraph{Data Filtration via Z-Scores:}
+In shared High-Performance Computing (HPC) environments, random background operating system spikes or node communication delays can cause execution stalls that do not reflect the solver's actual mathematical workload. To isolate the solver's true efficiency, Z-scores are computed for both total execution duration and energy-per-second. Runs exceeding a defined standard deviation threshold (e.g., $Z > 2.0$) are flagged as outliers and removed from the clean dataset. This ensures that the subsequent metrics evaluate the hydrodynamic solver rather than transient cluster traffic.
+
+\paragraph{Mean Average Power:}
+For each individual run, the average power draw (in Watts) is extracted by computing the slope of the cumulative energy timeline using an ordinary least squares regression. Calculating the mean ($\mu$) of this power draw across the ensemble establishes the true hardware baseline for each spatial resolution tier.
+
+\paragraph{($R^2$) Coefficient of Determination:}
+This metric serves as the primary analytical tool to directly test the time-proxy assumption. Fundamental physical power modeling relies on the relationship:
+\begin{equation}
+E = A + P \cdot t
+\label{eq:energy_power_time}
+\end{equation}
+where $E$ is total energy, $A$ represents static idle energy overhead, $P$ is dynamic power draw, and $t$ is execution time \cite{Tian2014}.
+If time is a perfect proxy for energy, dynamic power ($P$) must remain constant across iterations, meaning execution time and total energy would form a perfectly linear relationship ($R^2 = 1.0$). By running a linear regression across the execution times and total energy costs of the iterations, the framework directly tests this linearity. A reduced $R^2$ value points toward dynamic power fluctuations across runs, which undermines the assumption that execution time can be used as a simple standalone proxy.
+
+\paragraph{Welch's t-test (Independent Samples):}
+To determine how varying computational workloads affect underlying hardware behavior, Welch's t-test is applied to compare the average power draw between the different DEM resolution groups. This test determines whether altering the grid dimension causes a statistically significant shift in the rate at which the hardware consumes energy.
+
+
+\subsection{Results of Study 1}
+
+The telemetry data extracted from the ensembles provides three key observations regarding the validity of using execution time as an energy proxy.
+
+The raw telemetry data highlights potential cluster volatility before statistical filtering is applied. As shown in Figure~\ref{fig:proxy-fallacy}, tracking the total energy against execution duration for all iterations reveals instances of what appear to be execution stalls. While several outlier runs experienced extended durations, jumping from a baseline of under $10\,\text{s}$ to over $60\,\text{s}$, it is important to note that these iterations still yielded valid physical outputs. The exact underlying cause of their extended runtime is not definitively known. However, such delays could plausibly be caused by temporary I/O bottlenecks, background operating system tasks, or resource contention. Because the physical inputs were strictly identical across these iterations, algorithmic variations such as the solver dynamically reducing its timestep are highly unlikely to be the root cause. This is further supported by the disproportionately low power rate of these outliers, which suggests the hardware was idling rather than actively performing computations. Despite the increases in execution time between runs, the corresponding energy draw did not appear to scale proportionally, resulting in a degraded linear fit ($R^2 = 0.165$). This suggests that relying just on wall-clock time as an energy metric may be susceptible to external cluster interference. The Z-score filtering methodology was applied to identify and exclude these longer runs from the dataset to isolate the solver's active computational footprint.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth]{images/results/time/proxy_fallacy.png}
+    \caption{Total energy consumption vs. execution duration for all iterations.}
+    \label{fig:proxy-fallacy}
+\end{figure}
+
+After filtering the outliers, the clean dataset was evaluated to test if dynamic power remains constant across iterations. If energy consumption were primarily driven by execution duration, the filtered data would theoretically exhibit a highly linear correlation (near $R^2 = 1.0$). Figure~\ref{fig:proxy-fallacy-clean} reveals that even under clean and stable cluster conditions, this relationship remains surprisingly weak. The linear regression for the clean iterations yields a Coefficient of Determination of $R^2 = 0.518$. A value this low suggests that nearly half of the variance in energy consumption cannot be explained by the execution time alone. This divergence indicates that the solver's hardware usage, and therefore its dynamic power, fluctuates between iterations. Consequently, within the context of this study, time-to-solution appears to be an unreliable standalone proxy for total energy cost.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth]{images/results/time/proxy_fallacy_clean.png}
+    \caption{Total energy consumption vs. execution duration for all clean iterations.}
+    \label{fig:proxy-fallacy-clean}
+\end{figure}
+
+The underlying cause of this non-linearity is further clarified by examining the average power draw across the different resolution tiers. Figure~\ref{fig:power-signature} plots the average cumulative energy trajectories for each spatial resolution. The slope of these curves represents the dynamic power draw in Watts. The data illustrates that power is not a static constant; it shifts dynamically based on the grid resolution being processed. For example, the $12.0\,\text{m}$ resolution exhibited an average power draw of $22.68\,\text{W}$, while the coarser $15.0\,\text{m}$ and $20.0\,\text{m}$ resolutions operated at lower intensities of $17.14\,\text{W}$ and $16.90\,\text{W}$, respectively.
+
+\begin{table}[htbp]
+  \centering
+  \begin{tabular}{lccc}
+    \toprule
+    \textbf{Resolution Comparison} & \textbf{$t$-statistic} & \textbf{$p$-value} & \textbf{Significant ($p < 0.05$)?} \\
+    \midrule
+    $10.0\,\text{m}$ vs. $12.0\,\text{m}$ & -4.684 & $< 0.001$ & Yes \\
+    $10.0\,\text{m}$ vs. $15.0\,\text{m}$ & 12.183 & $< 0.001$ & Yes \\
+    $10.0\,\text{m}$ vs. $20.0\,\text{m}$ & 13.457 & $< 0.001$ & Yes \\
+    $12.0\,\text{m}$ vs. $15.0\,\text{m}$ & 17.084 & $< 0.001$ & Yes \\
+    $12.0\,\text{m}$ vs. $20.0\,\text{m}$ & 18.634 & $< 0.001$ & Yes \\
+    $15.0\,\text{m}$ vs. $20.0\,\text{m}$ & 0.743 & 0.458 & No \\
+    \bottomrule
+  \end{tabular}
+  \caption{Welch's t-test results comparing the average power draw between different grid resolution ensembles.}
+  \label{tab:welch-ttest}
+\end{table}
+
+A Welch's t-test confirms that these shifts in hardware intensity are statistically significant ($p < 0.001$) across almost all workload transitions. The test also highlights an unexpected dynamic: the $12.0\,\text{m}$ resolution draws a significantly higher average power than the more complex $10.0\,\text{m}$ baseline ($t = -4.684$, $p < 0.001$). This suggests that a higher power draw may not strictly indicate a larger total mathematical workload, but could instead reflect higher hardware utilization efficiency. It is plausible that the array dimensions of the $12.0\,\text{m}$ grid align more optimally with the GPU's cache limits or thread block architecture. This alignment would decrease memory stalls, allowing the processing cores to operate at a higher, more continuous intensity per second despite having fewer total cells to compute. Conversely, the comparison between the two coarsest grids ($15.0\,\text{m}$ and $20.0\,\text{m}$) yielded no statistically significant difference in power draw ($t = 0.743$, $p = 0.458$). This implies that while grid resolution and hardware alignment actively influence dynamic power, the system's power usage might stabilize once the computational grid becomes sufficiently sparse.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth]{images/results/time/power_signature.png}
+    \caption{Average cumulative energy-time plot of ensembles with different resolutions.}
+    \label{fig:power-signature}
+\end{figure}
+
+This behavior suggests that altering the spatial resolution of a hydrodynamic simulation does not simply decrease or increase the execution duration. Instead, it can actively alter the intensity of the hardware's power footprint. Because varying the computational workload appears to shift the baseline power rate, execution time alone may not reliably predict energy consumption across varying grid scales.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Study 2: Physical Hazard Uncertainty Quantification}
+\label{sec:res-study2}
+
+To establish a baseline understanding of how topographic errors affect simulation accuracy, this study investigates the necessity of UQ within our flood case. The primary objective is to quantify how physical input noise propagates through the SynxFlow solver to alter the resulting spatial flood predictions.
+
+\subsection{Experimental Setup}
+Five separate Monte Carlo ensembles were generated, each applying a different level of spatially stationary Gaussian noise to the baseline Digital Elevation Model (DEM). The selected noise standard deviations, $\sigma \in \{0.05, 0.1, 0.2, 0.5, 1.0\}\,\text{m}$, were chosen to represent the real-world accuracy spectrum of various remote sensing technologies:
 \begin{itemize}
-  \item Testing the Necessity of UQ in Our Specific Case
-  \item Testing the validity of using time-to-solution as a proxy for computational energy costs.
+    \item \textbf{0.05\,m}: Represents optimal drone mapping under ideal conditions, which can achieve absolute uncertainties as low as $\pm 0.05\,\text{m}$ \cite{VanderSluijs2026}.
+    \item \textbf{0.1\,m}: Represents the industry standard for high-quality, drone-derived terrain maps. This value aligns with official accuracy standards for high-resolution geospatial data, even in lightly vegetated areas \cite{VanderSluijs2026, ASPRS2015Standards}.
+    \item \textbf{0.2\,m}: Reflects the loss of accuracy that occurs in taller, dense vegetation, where the true ground is partially obscured from the sensor \cite{VanderSluijs2026}.
+    \item \textbf{0.5\,m}: Represents severe elevation bias, such as when thick shrubs completely block the ground and are mistakenly recorded as solid terrain by the sensor \cite{VanderSluijs2026}.
+    \item \textbf{1.0\,m}: Represents older or lower-resolution legacy datasets (such as aerial radar mapping), which typically exhibit vertical errors of $1.0$ to $2.0\,\text{meters}$ \cite{ASPRS2015Standards}.
 \end{itemize}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Experimental Setup}
-\label{sec:experimental-setup}
+Each of the five ensembles consists of $100$ equiprobable realizations. This sample size strikes a practical balance between statistical accuracy and computational cost. It provides enough data points for the statistical metrics to stabilize, while keeping the total execution time and energy requirements manageable for GPU-accelerated solvers.
 
+To measure the physical impact of the input noise, the Quantity of Interest (QoI) was defined as the maximum water depth recorded at a specific spatial coordinate \texttt{[925.0, 605.0]}. 
+
+This specific coordinate was selected because it represents a transitional flood zone. Coordinates situated in the center of a deep riverbed will inevitably flood across all iterations, exhibiting low variance, while coordinates on elevated topography will constantly remain dry. In contrast, a point located on the exact margin of the flood extent is highly sensitive to localized topographical noise. This approach mimics real-world challenges, such as evaluating the localized flood risk for a residential structure built on the absolute edge of a floodplain.
+
+\subsection{Statistical Framework}
+To quantify the degradation of physical predictions as input data quality drops, three statistical metrics were calculated for the water depth at the QoI across each ensemble:
 \begin{itemize}
-  \item Testing the Necessity of UQ in Our Specific Case
-      \begin{itemize}
-          \item Five different ensembles with noise levels $\sigma \in \{0.05, 0.1, 0.2, 0.5, 1.0\}$ meters were created.
-          \item Each ensemble consisted of 100 equiprobable realizations.
-          \item The Quantity of Interest (QoI) was the water depth at [925.0, 605.0].
-          \item The mean, standard deviation, and coefficient of variation (CV) were calculated for each ensemble.
-      \end{itemize}
-  \item Testing the validity of using time-to-solution as a proxy for computational energy costs.
-      \begin{itemize}
-          \item Three different versions of the original DEM were created with different resolutions. Cell sizes were namely 10.0~m, 12.0~m, 15.0~m, and 20.0~m. (Side by side figure?)
-          \item For each version, ensembles with 100 iterations were created with a zero noise level of $\sigma = 0.0$ meters.
-          \item The mean, standard deviation, and coefficient of variation (CV) were calculated for each ensemble.
-      \end{itemize}
-  \item Uncertainty Propagation of Energy Consumption
-      \begin{itemize}
-          \item The same ensembles ($\sigma \in \{0.05, 0.1, 0.2, 0.5, 1.0\}$ meters) from the first experiment were used to assess the effects of uncertainty propagation in energy consumption.
-          \item The mean, standard deviation, and coefficient of variation (CV) were calculated for each ensemble.
-      \end{itemize}
+    \item \textbf{Mean ($\mu$):} Establishes the expected physical water depth (in meters) at the boundary coordinate for each noise tier.
+    \item \textbf{Standard Deviation ($\sigma$):} Quantifies the absolute physical error introduced into the flow dynamics by the sensor noise.
+    \item \textbf{Coefficient of Variation (CV):} Normalizes the physical error relative to the mean depth. High $\text{CV}$ percentages at larger noise levels (e.g., $\sigma \ge 0.5\,\text{m}$) suggest a decline in the simulation's predictive reliability.
 \end{itemize}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Metrics}
-\label{sec:metrics}
 
-Define the metrics you use to assess your approach. Explain why each metric is appropriate for your research questions.
+\subsection{Results of Study 2}
 
-\begin{itemize}
-  \item Metrics that are tracked
-      \begin{itemize}
-          \item Maximum Water Depth (m) at [925.0, 605.0]
-          \item Time-to-Solution (s)
-          \item Total Attributed Energy (J)
-      \end{itemize}
-  \item Metrics for statistical evaluation
-      \begin{itemize}
-          \item Mean
-          \item Standard Deviation
-          \item Coefficient of Variation (CV)
-          \item Interquartile Range (IQR)
-          \item R squared ($R^2$)
-      \end{itemize}
-\end{itemize}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Results}
-\label{sec:eval-results}
-
-Present the evaluation results. Use tables and figures to summarise comparisons across conditions or baselines.
-
-\subsection{Neccessity of UQ in Our Specific Case}
+Table \ref{tab:study2-results} summarizes the statistical impact of topographical uncertainty on the simulated water depth at the selected location. Within the context of this specific case study, the data reveals three key observations regarding how input errors propagate through the hydrodynamic solver.
 
 \begin{table}[H]
   \centering
@@ -76,62 +225,133 @@ Present the evaluation results. Use tables and figures to summarise comparisons 
     \bottomrule
   \end{tabular}
   \caption{Impact of input uncertainty $\sigma_{input}$ on the resulting water depth measurements.}
-  \label{tab:uq-results}
+  \label{tab:study2-results}
 \end{table}
 
-(Add a figure showing the difference in DEMs when added noise? How, without a gif? Side by side?)
+As expected, increasing the topographical noise ($\sigma_{\text{input}}$) directly degrades the certainty of the physical simulation. At high quality sensor resolutions ($\sigma = 0.05\,\text{m}$ and $0.1\,\text{m}$), the model output remains relatively stable, showing a CV below 15\%. However, as the DEM accuracy drops to levels typical of dense vegetation or older legacy datasets ($\sigma \ge 0.5\,\text{m}$), the predictive confidence drops considerably. At $\sigma = 1.0\,\text{m}$, the standard deviation of the water depth reaches $\pm 0.817\,\text{m}$, resulting in a CV of 74.21\%. For this specific coordinate, a variance this large suggests that localized flood predictions may become unreliable for risk assessment, as the margin of error approaches the predicted flood depth itself.
+
+While the increase of the standard deviation was anticipated, the behavior of the expected water depth provides an interesting observation. Because the injected Gaussian noise was strictly zero-mean ($\mu = 0$), one might expect the resulting mean water depth to remain relatively constant across the ensembles, with only the variance increasing. Instead, the data points to a potential systematic positive bias. The mean water depth rises from $0.739\,\text{m}$ at the lowest noise tier to $1.101\,\text{m}$ at the highest.
+
+This implies that, in this specific simulation, topographical noise causes more than just random fluctuations. The bumps and dips introduced by the noise likely act as synthetic dams and sinks and these artificial obstructions prevent natural drainage. As a result, the water pools and backs up into the gauge location, leading to the higher localized flood depths observed here.
+
+These initial results highlight why deterministic, single-run hazard assessments can potentially be misleading, especially in locations near riverbeds. Therefore, executing UQ serves as a valuable tool for understanding the true reliability of a flood map.
 
 
-\subsection{Validity of Using Time-to-Solution as a Proxy for Computational Energy Consumption}
 
-\begin{itemize}
-  \item Energy ($E$) is the product of power ($P$) and time ($t$). So we need a linear relationship between time and energy ~\eqref{eq:energy-time}. to use time as a proxy for energy. 
-\end{itemize}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\begin{equation}
-E = A + P \cdot t
-\label{eq:energy-time}
-\end{equation}
+\section{Study 3: Energy Consumption Uncertainty Propagation}
+\label{sec:res-study3}
 
-\begin{figure}[H]
-  \centering
-  \includegraphics[width=1\textwidth]{images/results/time/proxy_fallacy.png}
-  \caption{Total energy consumption vs. execution duration for all iterations}
-  \label{fig:proxy-fallacy}
-\end{figure}
+The final study assesses how physical input uncertainty propagates into computational energy variability. This study addresses Sub-question 3, by evaluating whether the topographic noise injected into the digital elevation model inherently alters the total process-attributed energy required to solve the hydrodynamic equations.
 
-\begin{figure}[H]
-  \centering
-  \includegraphics[width=1\textwidth]{images/results/time/proxy_fallacy_clean.png}
-  \caption{Total energy consumption vs. execution duration for all clean iterations}
-  \label{fig:proxy-fallacy-clean}
-\end{figure}
+\subsection{Experimental Setup}
+\label{sec:res-study3-setup}
 
-\begin{figure}[H]
-  \centering
-  \includegraphics[width=1\textwidth]{images/results/time/power_signature.png}
-  \caption{Average Cumulative Energy-Time Plot of Ensembles with Different resolutions}
-  \label{fig:power-signature}
-\end{figure}
+To ensure a proper comparison, this study analyzes the exact same five Monte Carlo ensembles ($\sigma \in \{0.05, 0.1, 0.2, 0.5, 1.0\}\,\text{m}$) generated in \hyperref[sec:res-study2]{Study 2}.
 
-\subsection{Uncertainty Propagation of Energy Consumption}
+Because the baseline simulation parameters remain identical across all runs, any observed change in energy consumption is mathematically isolated. This ensures that variations in power draw are caused by the GPU solver solving altered DEMs.
 
-\begin{figure}[H]
-  \centering
-  \includegraphics[width=1\textwidth]{images/results/uq/energy_uq_stripplot.png}
-  \caption{Raw distribution of total energy consumption for each topographic noise level}
-  \label{fig:energy-uq-stripplot}
-\end{figure}
+\subsection{Statistical Framework}
+To quantify this variation, the resulting energy telemetry for each noise tier is evaluated using three specific statistical metrics:
 
-\begin{figure}[H]
+\paragraph{Mean ($\mu$):}
+As the standard deviation of the input noise ($\sigma$) increases, the simulated terrain becomes artificially "rougher," characterized by synthetic bumps and dips. To remain mathematically stable when water flows over steep or irregular gradients, hydrodynamic solvers like SynxFlow must rely on adaptive timestepping. Rougher terrain forces the solver to take smaller timesteps to solve the flow.
+
+\paragraph{Standard Deviation ($\text{Std. Dev.}$):}
+The standard deviation measures the spread of the energy in Joules. This metric quantifies how much the power draw swings from one individual iteration to the next, even when the overall noise distribution ($\sigma$) remains the same.
+
+\paragraph{90\% Confidence Interval (5th and 95th Percentiles):}
+To highlight the challenge this variance poses for large-scale risk assessment, the 90\% confidence interval of the total energy consumption is calculated. In shared HPC environments, researchers must allocate strict, predictable power and time budgets. If the upper bound (95th percentile) of the energy consumption diverges significantly from the mean at higher noise levels, it signals that running UQ ensembles can be unpredictable. This signals that one may not be able to simply profile a single iteration and accurately predict the maximum energy budget required for the full stochastic ensemble.
+
+\subsection{Results of Study 3}
+
+The initial evaluation of energy uncertainty (Run 1) analyzed a 100-iteration Monte Carlo ensemble for each noise tier. As shown in Figure~\ref{fig:energy-uq-boxplot} and summarized in Table~\ref{tab:run1-energy-stats}, the findings from this first execution window suggested that as topographic noise ($\sigma$) increased, both the average energy consumption and the run-to-run variance expanded. For example, the mean energy rose from $184.78\,\text{J}$ at $\sigma = 0.05\,\text{m}$ to $212.80\,\text{J}$ at $\sigma = 1.00\,\text{m}$, while the standard deviation nearly tripled from $\pm 19.71\,\text{J}$ to $\pm 55.75\,\text{J}$.
+
+\begin{figure}[htbp]
   \centering
   \includegraphics[width=1\textwidth]{images/results/uq/energy_uq_boxplot.png}
-  \caption{Raw distribution of total energy consumption for each topographic noise level}
+  \caption{Boxplots of total energy consumption for each topographic noise level for run 1}
   \label{fig:energy-uq-boxplot}
 \end{figure}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Discussion}
-\label{sec:eval-discussion}
+\begin{table}[htbp]
+\centering
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Topographic Noise ($\sigma$)} & \textbf{Mean ($\mu$)} & \textbf{Median} & \textbf{Std. Dev.} & \textbf{90\% Confidence Interval} \\
+\midrule
+$0.05\,\text{m}$ & $184.78\,\text{J}$ & $180.73\,\text{J}$ & $\pm 19.71\,\text{J}$ & $[169.25\,\text{J}, 207.33\,\text{J}]$ \\
+$0.10\,\text{m}$ & $199.81\,\text{J}$ & $200.97\,\text{J}$ & $\pm 16.24\,\text{J}$ & $[176.86\,\text{J}, 211.62\,\text{J}]$ \\
+$0.20\,\text{m}$ & $191.38\,\text{J}$ & $187.31\,\text{J}$ & $\pm 27.48\,\text{J}$ & $[167.91\,\text{J}, 220.32\,\text{J}]$ \\
+$0.50\,\text{m}$ & $219.28\,\text{J}$ & $210.33\,\text{J}$ & $\pm 46.09\,\text{J}$ & $[152.31\,\text{J}, 319.68\,\text{J}]$ \\
+$1.00\,\text{m}$ & $212.80\,\text{J}$ & $206.24\,\text{J}$ & $\pm 55.75\,\text{J}$ & $[147.81\,\text{J}, 293.47\,\text{J}]$ \\
+\bottomrule
+\end{tabular}
+\caption{Statistical summary of total computational energy consumption for Run 1 (100 iterations).}
+\label{tab:run1-energy-stats}
+\end{table}
 
-Interpret the evaluation results. Do they support your hypotheses? Where does your approach perform well and where does it struggle? Relate findings back to the research questions.\footnote{If results are mixed or negative, discuss why — this is valuable scientific contribution in itself.}
+However, as demonstrated in \hyperref[sec:res-study1]{Study 1}, energy metrics in a shared HPC environment can be susceptible to background traffic. To verify whether the energy profile observed in Run 1 was an inherent property of the solver or just a reflection of the cluster's state during that specific execution window, the exact same experimental setup was duplicated in a separate, independent cluster allocation (Run 2).
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=1\textwidth]{images/results/uq/energy_uq_boxplot2.png}
+  \caption{Boxplots of total energy consumption for each topographic noise level for run 2}
+  \label{fig:energy-uq-boxplot2}
+\end{figure}
+
+\begin{table}[htbp]
+\centering
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Topographic Noise ($\sigma$)} & \textbf{Mean ($\mu$)} & \textbf{Median} & \textbf{Std. Dev.} & \textbf{90\% Confidence Interval} \\
+\midrule
+$0.05\,\text{m}$ & $226.40\,\text{J}$ & $216.10\,\text{J}$ & $\pm 38.88\,\text{J}$ & $[183.00\,\text{J}, 319.78\,\text{J}]$ \\
+$0.10\,\text{m}$ & $239.76\,\text{J}$ & $222.58\,\text{J}$ & $\pm 50.42\,\text{J}$ & $[182.70\,\text{J}, 332.58\,\text{J}]$ \\
+$0.20\,\text{m}$ & $224.47\,\text{J}$ & $224.51\,\text{J}$ & $\pm 24.96\,\text{J}$ & $[189.88\,\text{J}, 255.58\,\text{J}]$ \\
+$0.50\,\text{m}$ & $230.38\,\text{J}$ & $231.25\,\text{J}$ & $\pm 22.30\,\text{J}$ & $[202.45\,\text{J}, 259.73\,\text{J}]$ \\
+$1.00\,\text{m}$ & $244.44\,\text{J}$ & $234.16\,\text{J}$ & $\pm 44.74\,\text{J}$ & $[210.16\,\text{J}, 331.28\,\text{J}]$ \\
+\bottomrule
+\end{tabular}
+\caption{Statistical summary of total computational energy consumption for Run 2 (100 iterations).}
+\label{tab:run2-energy-stats}
+\end{table}
+
+
+The telemetry from Run 2, detailed in Figure~\ref{fig:energy-uq-boxplot2} and Table~\ref{tab:run2-energy-stats}, also signals the impact of hardware volatility. While Run 2 exhibited similar internal trends regarding the expansion of variance, its overall baseline energy footprint was consistently higher across all tiers. For instance, at the $\sigma = 0.05\,\text{m}$ tier, the mean energy jumped from $184.78\,\text{J}$ in Run 1 to $226.40\,\text{J}$ in Run 2. Furthermore, Run 2 contains a striking anomaly at the $\sigma = 0.10\,\text{m}$ noise level. Despite representing a high-quality terrain input, this tier recorded a disproportionately high mean of $240\,\text{J}$ and the largest standard deviation of the run at $\pm 50.4\,\text{J}$. Because \hyperref[sec:res-study1]{Study 1} established that idle cluster stalls reduce dynamic power rates rather than surging computational energy, this elevated energy footprint is unlikely to stem from pure hardware idling. Instead, it suggests that specific DEMs within this tier may have triggered aggressive adaptive timestepping in the solver. These discrepancies illustrate that baseline energy profiles can fluctuate significantly between execution windows due to a combination of input-uncertainty and cluster conditions.
+
+Because evaluating a single execution window might lead to biased conclusions regarding total operational cost, the telemetry from both runs was merged into a single 200-iteration ensemble per noise tier. This combined dataset aims to mitigate cluster-induced variance and establish a more generalized understanding of the solver's energy behavior. Figure~\ref{fig:energy-uq-boxplot-combined} and Table~\ref{tab:combined-energy-stats} summarize the statistical findings for this merged dataset.
+
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=1\textwidth]{images/results/uq/energy_uq_boxplot_combined.png}
+  \caption{Boxplots of total energy consumption for combined results of runs 1 and 2}
+  \label{fig:energy-uq-boxplot-combined}
+\end{figure}
+
+\begin{table}[htbp]
+\centering
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Topographic Noise ($\sigma$)} & \textbf{Mean ($\mu$)} & \textbf{Median} & \textbf{Std. Dev.} & \textbf{90\% Confidence Interval} \\
+\midrule
+$0.05\,\text{m}$ & $205.59\,\text{J}$ & $196.53\,\text{J}$ & $\pm 37.15\,\text{J}$ & $[171.09\,\text{J}, 301.03\,\text{J}]$ \\
+$0.10\,\text{m}$ & $219.79\,\text{J}$ & $203.66\,\text{J}$ & $\pm 42.39\,\text{J}$ & $[181.82\,\text{J}, 318.61\,\text{J}]$ \\
+$0.20\,\text{m}$ & $207.92\,\text{J}$ & $207.50\,\text{J}$ & $\pm 31.00\,\text{J}$ & $[172.34\,\text{J}, 249.60\,\text{J}]$ \\
+$0.50\,\text{m}$ & $224.83\,\text{J}$ & $220.15\,\text{J}$ & $\pm 36.54\,\text{J}$ & $[170.81\,\text{J}, 299.63\,\text{J}]$ \\
+$1.00\,\text{m}$ & $228.62\,\text{J}$ & $222.91\,\text{J}$ & $\pm 52.85\,\text{J}$ & $[167.94\,\text{J}, 312.16\,\text{J}]$ \\
+\bottomrule
+\end{tabular}
+\caption{Statistical summary of total computational energy consumption for the combined 200-iteration ensembles.}
+\label{tab:combined-energy-stats}
+\end{table}
+
+The combined telemetry data offers three key observations regarding how topographic uncertainty might propagate into computational energy metrics within the scope of this specific study.
+
+By evaluating both the median and the mean, the data reveals a distinction between the solver's theoretical efficiency and its actual operational cost. Across the ensembles, the mean is generally higher than the median. This right-skewed distribution suggests that while the solver's baseline energy cost remains relatively stable under typical conditions (represented by the median), a combination of transient cluster delays and complex local flow iterations creates a long tail of higher-energy outliers that elevate the mean energy consumption. Additionally, both metrics show a general upward trend as topographic noise increases. This suggests that as the injected noise creates artificially steep gradients, and SynxFlow likely shrinks its adaptive timestep to maintain numerical stability, which appears to incrementally increase the overall energy required to solve the simulation.
+
+Beyond altering the average energy cost, higher topographic noise appears to degrade the predictability of the solver's energy footprint. The spread of energy consumption generally increases as the input noise increases. For the $0.05\,\text{m}$ and $0.20\,\text{m}$ tiers, the standard deviations are $37.15\,\text{J}$ and $31.00\,\text{J}$, respectively. However, at the $1.00\,\text{m}$ noise tier, the standard deviation expands to $52.85\,\text{J}$. This indicates that when a digital elevation model is highly uncertain, the computational energy required to process it might also become highly uncertain, leading to more run-to-run variance even within the exact same noise distribution.
+
+The expansion of the 90\% confidence interval highlights a potential challenge for energy estimation in HPC environments. The combined data shows that at the $1.00\,\text{m}$ noise tier, the 95th percentile upper bound reaches $312.16\,\text{J}$, which is nearly $84\,\text{J}$ higher than the mean. Within the context of this study, this suggests that relying on a single deterministic profile to predict the maximum energy budget for a full stochastic ensemble might result in under-allocation. Consequently, safety margins for computational budgets may need to be scaled dynamically based on the quality of the input data, with poorer input data potentially requiring a wider safety net.
