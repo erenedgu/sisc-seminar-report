@@ -32,7 +32,7 @@ Rather than relying only on power readings that also capture background cluster 
 \section{Telemetry Integration and Experimental Workflow}
 \label{sec:workflow}
 
-SynxFlow and Alumet operate as separate software tools without interoperability. To bridge this gap, a custom Python-based framework was developed to combine the two tools into an automated experimental pipeline \ref{EdguCorrea2026TopographicUQ}.
+SynxFlow and Alumet operate as separate software tools without interoperability. To bridge this gap, a custom Python-based framework was developed to combine the two tools into an automated experimental pipeline \cite{EdguCorrea2026TopographicUQ}.
 
 The workflow is structured around a configurable Monte Carlo loop. In each iteration, a distinct Gaussian noise perturbation is applied to the original DEM. Then the Synxflow solver is executed and energy profiling is done using Alumet, before accumulated telemetry and hazard data across the ensemble are mathematically post-processed.
 
