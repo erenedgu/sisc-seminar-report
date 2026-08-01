@@ -1,19 +1,21 @@
 \chapter{Introduction}
 \label{ch:introduction}
 
- Natural hazards like rapid flow-like landslides and river floods frequently cause deaths, economic devastation, and environmental destruction worldwide \cite{Zhao2020, Meadows2024}. To assess the risks of these hazards, geohazard studies rely on computational flood models \cite{Zhao2020, Meadows2024}. An essential component in developing any of these computational models is the Digital Elevation Model (DEM). DEMs represent the topography of the terrain where the slide or flow occurs \cite{Zhao2020}.
+ Natural hazards like landslides and river floods frequently cause deaths, economic devastation, and environmental destruction worldwide \cite{Zhao2020, Meadows2024}. To assess the risks of these hazards, geohazard studies rely on computational flood models \cite{Zhao2020, Meadows2024}. An essential component in developing any of these computational models is the Digital Elevation Model (DEM). DEMs represent the topography of the terrain where the landslide or flood occurs \cite{Zhao2020}.
 
-Despite DEMs being essential components, these simulations are susceptible to even small vertical inaccuracies in the topographic data \cite{Meadows2024}. Uncertainty Quantification (UQ) is the process used to evaluate how such input errors propagate through a model to affect the final simulation results \cite{Zhao2020}. However, in typical simulation-based hazard assessments, the effect of the DEM error is rarely considered in uncertainty propagation \cite{Zhao2020}. Despite the fact that ignoring DEM uncertainty can result in serious biases in risk management choices, in some cases the topography data is regarded as reliable \cite{Zhao2020}.
+Despite DEMs being essential components, these simulations are susceptible to vertical inaccuracies in the topographic data \cite{Meadows2024}. However, in typical simulation-based hazard assessments, the effect of the DEM error is rarely considered in uncertainty propagation \cite{Zhao2020}. 
 
-DEMs are generated using various spaceborne sensors, such as Synthetic Aperture Radar (SAR) or stereoscopic imaging \cite{Meadows2024}. DEMs naturally have variable resolutions and vertical inaccuracies due to these diverse sensor technologies and features. These sensors penetrate vegetation and built infrastructure to varying degrees \cite{Meadows2024}. As a result, spaceborne sensors frequently generate a positive vertical bias, where ground elevations are overestimated \cite{Meadows2024}. These vertical errors cause misleading hazard maps and exposure evaluations later in the analysis by acting as artificial sinks or obstructions that mistakenly retain or divert simulated flows \cite{Meadows2024}.
+Digital Elevation Models (DEMs) derived from spaceborne sensors, such as Synthetic Aperture Radar (SAR) or stereoscopic imaging, inherently exhibit vertical inaccuracies due to varying penetration of vegetation and built infrastructure \cite{Meadows2024}. This frequently introduces a positive elevation bias, overestimating ground heights. In hydrodynamic simulations, these artificial errors act as synthetic sinks or obstructions that mistakenly retain or divert flow, ultimately compromising hazard maps \cite{Meadows2024}.
 
-Stochastic simulation is an efficient method to describe the uncertainty in order to overcome these constraints \cite{Zhao2020}. By treating the DEM error as a random field and injecting it into the original data, researchers can generate an ensemble of equiprobable DEM realizations \cite{Oksanen2006, Zhao2020}. As a result, when comparing an original DEM with a synthetically noisy DEM, both must be regarded as alternative, equally probable representations of the actual landscape \cite{Oksanen2006}.
+
+
+Stochastic simulation is an efficient method to quantify uncertainty \cite{Zhao2020}. By treating the DEM error as a random field and injecting it into the original data, an ensemble of equiprobable DEM realizations can be generated \cite{Oksanen2006, Zhao2020}. As a result, when comparing an original DEM with a synthetically noisy DEM, both must be regarded as alternative, equally probable representations of the actual landscape \cite{Oksanen2006}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Motivation}
 \label{sec:motivation}
 
-In flood simulation UQs, hundreds or thousands of synthetic scenarios must be evaluated in order to generate the required ensembles \cite{Abbaszadeh2022, Fraehr2023, Zhao2020}. Multiplying this effort across a large ensemble creates a massive computing demand that is beyond the capabilities of conventional supercomputers because high-accuracy numerical flood models are already computationally expensive \cite{Abbaszadeh2022, Fraehr2023}. In order to reduce the power and operating costs connected with these urban-domain simulations, the flood modeling community is searching for hardware solutions that offer better performance-per-watt, such as multi-GPU architectures.
+In flood simulation UQs, hundreds or thousands of synthetic scenarios must be evaluated to generate the required ensembles \cite{Abbaszadeh2022, Fraehr2023, Zhao2020}. Because high-accuracy numerical flood models are already computationally expensive, this scale of analysis creates a massive computing demand that is beyond the capabilities of conventional supercomputers \cite{Abbaszadeh2022, Fraehr2023}. To reduce the power and operating costs associated with these high-resolution simulations, the flood modeling community is searching for hardware solutions that offer better performance-per-watt, such as multi-GPU architectures.
 
 Nevertheless, execution time is still implicitly used as a proxy for computational efficiency \cite{Kang2026, Shaw2021, Aaron2023}. This ignores actual energy usage, despite the shift to power-hungry multi-GPU architectures. Instead of monitoring electrical power draw, researchers tend to use runtime benchmarks and speedups to assess the performance of new GPU-accelerated solvers \cite{Kang2026, Shaw2021, Aaron2023}.
 
@@ -31,7 +33,7 @@ These papers ignore the power requirements of modern GPUs by evaluating model ef
 To address the research gap identified above, this study derives the following primary research question:
 
 \begin{itemize}
-    \item How can the energy consumption of heterogeneous scientific computing workloads be accurately measured and evaluated under input and execution uncertainty?
+    \item How do input data uncertainty and execution environment volatility impact the measurement and predictability of computational energy consumption in GPU-accelerated flood solvers?
 \end{itemize}
 
 To comprehensively answer this problem, the research is guided by three specific sub-questions:
@@ -45,5 +47,7 @@ To comprehensively answer this problem, the research is guided by three specific
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Outline}
 \label{sec:outline}
+
+The remainder of this thesis is structured as follows. In Chapter~\ref{ch:relatedwork}, we review existing literature on topographic uncertainty quantification and computational energy profiling, highlighting the limitations of current telemetry methodologies. In Chapter~\ref{ch:ownwork}, we detail the experimental setup, introducing the SynxFlow solver, the Alumet agent, and the custom orchestration framework developed for automated ensemble execution and data synchronization. In Chapter~\ref{ch:evaluation}, we present the empirical findings across four studies, which validate the process-isolated telemetry approach, evaluate execution time as an energy proxy, and assess how topographic noise impacts both physical flood predictions and computational energy variability. Finally, in Chapter~\ref{ch:summary}, we summarize the core findings, acknowledge the study's limitations, and propose directions for future research.
 
 

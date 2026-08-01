@@ -1,32 +1,32 @@
-\chapter{Summary and Future Work}
-\label{ch:summary}
+\chapter{Summary and Future Work}\label{ch:summary}
 
-Briefly restate the problem you addressed and summarise how your work contributes to solving it. This chapter should give a reader who skips to the end a clear picture of what was done and what comes next.
+This report addressed the gap between geohazard uncertainty quantification and computational energy profiling. By coupling the SynxFlow hydrodynamic solver with the Alumet telemetry framework, this work transitioned from relying on execution time as a proxy to directly measuring process-isolated energy consumption for stochastic flood simulations. This chapter summarizes the key findings, acknowledges experimental limitations, and outlines future research directions.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Summary}
-\label{sec:summary}
+\section{Summary}\label{sec:summary}
 
-Revisit your research questions from Chapter~\ref{ch:introduction} and state concisely how each was addressed. Highlight your key contributions.\footnote{Avoid simply repeating the abstract — this section should reflect on the work as a whole, now that the reader has seen all the details.}
-
+This research investigated how input data uncertainty and execution environment volatility impact the energy predictability of GPU-accelerated flood solvers. The core research questions from Section~\ref{sec:research-questions} were addressed as follows:
+  
 \begin{itemize}
-  \item[\textit{RQ1}] How your first research question was answered.
-  \item[\textit{RQ2}] How your second research question was answered.
-  \item[\textit{RQ3}] How your third research question was answered.
-\end{itemize}
+    \item[\textit{RQ1}] \textbf{Methodologies for process-level energy attribution:} A custom Python framework was developed to integrate SynxFlow with Alumet. By utilizing dynamic Process ID tracking and scaling hardware power by utilization percentages, this methodology isolated the solver's true energy footprint from shared cluster noise.
+    
+    \item[\textit{RQ2}] \textbf{Execution time as an energy proxy:} Preliminary results indicated that execution time may be an unreliable standalone proxy for computational energy in this context. Welch's t-tests suggested that altering the computational grid's spatial resolution can shift the hardware's dynamic power intensity. Time-to-solution might not fully capture this energy variability, as power rates appeared to fluctuate based on grid-to-GPU alignment.
 
+    \item[\textit{RQ3}] \textbf{Uncertainty propagation to energy variability:} Initial observations suggested that as spatial input uncertainty ($\sigma$) increases, both the average computational energy and run-to-run variance show a tendency to expand. Rougher terrain may trigger adaptive timestepping, potentially producing right-skewed energy distributions. This indicates that highly uncertain DEMs could lead to highly uncertain energy footprints, suggesting that single deterministic profiles might underestimate the energy requirements of stochastic ensembles.
+\end{itemize}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 \section{Limitations}
 \label{sec:limitations}
 
-Discuss the boundaries of your work — what assumptions were made, what was out of scope, and what threats to validity exist. Acknowledging limitations honestly strengthens rather than weakens your thesis.
+While establishing a foundational link between input uncertainty and energy consumption, this study has several boundaries. First, the simplified error modeling relies on a zero-mean Gaussian noise model ($\epsilon \sim \mathcal{N}(0, \sigma^2)$), which assumes isotropic errors and oversimplifies the spatially correlated and biased errors of real-world remote sensing. Second, the scope of the scenario is limited, as the findings stem from a single flood simulation. Consequently, the observed non-linear hydrodynamic effects may not uniformly apply to varying catchments or urban floodplains.
+
+Additionally, due to computational expense, the ensemble sizes were restricted to 100 iterations. While this sample size captures primary trends, it may be insufficient to fully stabilize extreme tail behaviors within the energy distributions. Finally, the observed power shifts are inherently tied to the hardware specificity of the Gaia compute cluster and its NVIDIA GPUs, meaning these exact energy dynamics may vary across different computing architectures.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Future Work}
 \label{sec:future-work}
 
-Identify open questions and promising directions that follow from your work. What would you do differently with more time? What problems does your work open up that did not exist before?
+The findings of this thesis open several promising directions for further research. First, future studies must improve the error model by incorporating spatially correlated noise alongside a negative bias shift. Because spaceborne sensors frequently overestimate ground heights by capturing vegetation and buildings instead of bare earth \cite{Meadows2024}, an accurate error model must simulate the removal of this positive sensor bias by lowering the elevation values in obstructed areas.
 
-
-Improve the error model: Positive bias because of \cite{Meadows2024}
-Try more flood cases, and different DEMs
+Furthermore, the topographic scope of the framework should be expanded. Testing the methodology on diverse flood cases and different DEMs will help determine if specific terrain features inherently demand higher adaptive energy costs. Finally, scaling the Monte Carlo simulations to larger ensembles is necessary to observe if the variability in energy consumption fully stabilizes. Capturing this stabilization is critical for establishing reliable, carbon-aware HPC scheduling limits.

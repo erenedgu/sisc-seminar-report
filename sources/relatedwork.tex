@@ -3,7 +3,17 @@
 
 This chapter reviews existing literature at the intersection of hydrodynamic flood modeling, digital terrain analysis, and energy telemetry in high-performance computing (HPC). Section~\ref{sec:energy-telemetry} examines current software and hardware profiling methodologies used in hydrological simulations. Subsequently, Section~\ref{sec:limitations-related-work} analyzes the key limitations of component and node level measurement techniques, highlighting the need for process-isolated telemetry.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Energy Telemetry Approaches in Hydrodynamic Modeling}
+
+\section{Topographic Uncertainty Quantification in Hydrodynamic Modeling}
+\label{subsec:topographic_uq}
+
+Topographic UQ is a well established discipline in computational hydraulics, evaluating how vertical elevation errors in DEMs propagate through two-dimensional Shallow Water Equations (SWE) \cite{Hunter2008, Savage2016, Abily2016}. Forward UQ frameworks routinely use non-intrusive Monte Carlo (MC) sampling to stochastically perturb baseline DEMs and derive probabilistic confidence bounds \cite{Abily2016, Savage2016}. While Multilevel Monte Carlo (MLMC) sampling has been established to accelerate shallow-water UQ under structural parameter and fault uncertainties \cite{SanchezLinares2016}, spatial DEM elevation noise propagation in 2D SWE solvers has predominantly relied on standard MC sampling. Across these frameworks, existing literature has focused almost exclusively on domain-level physical metrics, quantifying output variance in localized water depths, flow velocities, and total flood inundation boundaries \cite{Hunter2008, SanchezLinares2016, Abily2016, Savage2016}.
+
+While physical output variability is thoroughly documented, the associated computational burden is traditionally reported strictly as static wall-clock time or CPU execution penalties \cite{Hunter2008, SanchezLinares2016, Abily2016, Savage2016}. In explicit numerical schemes, localized elevation perturbations directly alter local water depths $h$, causing inter-cell fluxes, Courant-Friedrichs-Levy (CFL) stability constraints, and allowable time steps ($\Delta t$) to fluctuate dynamically across realizations \cite{Hunter2008, SanchezLinares2016, Abily2016, Savage2016}. Consequently, a gap exists between uncertainty propagation research and hardware energy telemetry in computational hydraulics. Within the examined UQ literature for 2D shallow water modeling, real-time hardware power draw and energy metrics across stochastic DEM ensembles remain unexamined. Investigating energy consumption in topographic UQ ensembles directly addresses this gap, establishing whether single-run deterministic profiling can accurately predict compute allocations for stochastic workloads on shared HPC infrastructure.
+
+
+
+\section{Energy Approaches in Hydrodynamic Modeling}
 \label{sec:energy-telemetry}
 
 While traditional HPC research in hydrology often focuses on minimizing execution time, recent literature has shifted toward profiling the energy efficiency of flood simulations and terrain analyses. To achieve this, researchers have employed a variety of software and hardware telemetry methods to capture the power consumption of hydrodynamic models.
@@ -16,7 +26,9 @@ In the broader domain of digital terrain analysis, researchers aimed to accelera
 
 Finally, a recent study investigated energy optimization strategies when using HPC to forecast floods. The researchers tested different computer cluster setups to find the most efficient way to run TELEMAC-2D, which is a program used to simulate flash floods in the Brague river \cite{AhWoane2025}. To profile energy consumption, they used a Python script based on the ska-sdp-perfmon toolkit to collect power data directly from the computer nodes \cite{AhWoane2025}. By tracking this power usage over time, they calculated the total energy needed to complete a simulation. They noted that because they measured energy at the node level, the final numbers included both the flood simulation itself and any background programs running on those same nodes at the time \cite{AhWoane2025}.
 
-\section{Limitations of Component-Level Telemetry}
+\section{Limitations of Existing Approaches}
 \label{sec:limitations-related-work}
 
 Despite providing valuable macro-level insights, these software and hardware telemetry methodologies exhibit limitations that compromise their precision. A fundamental challenge is that modern hardware frequently executes multiple concurrent tasks. However, native hardware sensors report the total power consumption of the component rather than isolating the energy consumed by a specific process. Consequently, measuring GPU or node energy also captures background activities not initiated by the simulation itself. While baseline subtraction techniques can successfully identify broad efficiency trends, they can also yield misleading results due to the unpredictable nature of operating system tasks. For instance, if a background spike occurs during the baseline check, the resulting baseline can be skewed.
+
+Beyond hardware-level measurement challenges, software-based profiling frameworks present distinct operational constraints. Many of these tools rely on white-box methodologies that require manual modification to the solver's source code by inserting explicit instrumentation hooks or measurement calls. Furthermore, these telemetry libraries are typically language-specific which is restricting their portability.

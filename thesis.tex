@@ -134,8 +134,8 @@
 
 \frontmatter
   \include{sources/title}
-  \include{sources/abstract}
-  \include{sources/acknowledgements}
+  % \include{sources/abstract}
+  % \include{sources/acknowledgements}
   \include{sources/declarationofownwork}
 
   \tableofcontents
@@ -144,15 +144,15 @@
   \listoftables
   \addcontentsline{toc}{chapter}{\listtablename}
 
-  \begingroup
-    \let\clearpage\relax
-    \glsaddall
-    \printnoidxglossary[type=\acronymtype]
-    \newpage
-    \printnoidxglossary
-  \endgroup
+  % \begingroup
+  %   \let\clearpage\relax
+  %   \glsaddall
+  %   \printnoidxglossary[type=\acronymtype]
+  %   \newpage
+  %   \printnoidxglossary
+  % \endgroup
 
-  \include{sources/conventions}
+  % \include{sources/conventions}
 
 \mainmatter
   \include{sources/introduction}
@@ -161,8 +161,8 @@
   \include{sources/evaluation}
   \include{sources/summaryandfuturework}
 
-\appendix
-  \include{sources/appendix}
+% \appendix
+%   \include{sources/appendix}
 
 % This ensures that the subsequent sections are being included as root
 % items in the bookmark structure of your PDF reader.

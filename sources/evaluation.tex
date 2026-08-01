@@ -8,8 +8,6 @@
 
 Before scaling the framework up to execute full UQ ensembles, it is necessary to validate Alumet's ability to accurately isolate and profile the energy consumption of a single simulation run. Because SynxFlow relies on a heterogeneous execution model, its energy draw varies dynamically between the  CPU and the GPU depending on the active computational phase.
 
-The attributed GPU and CPU time-series plots were generated using the \texttt{alumet-insight} post-processing utility \cite{Correa2026AlumetInsight}.
-
 By correlating the time-series telemetry gathered by Alumet with the cumulative energy curve, the execution pipeline of a single run can be decomposed into two distinct operational phases.
 
 \subsubsection{Phase 1: CPU-Bound Initialization and I/O ($0.0\,\text{s} - 1.0\,\text{s}$)}
@@ -55,7 +53,7 @@ Demonstrating that the framework can distinguish CPU setup spikes from continuou
 \section{Study 1: Evaluation of the Time-to-Solution Energy Proxy}
 \label{sec:res-study1}
 
-To address the widespread reliance on execution time as a proxy for energy consumption (as highlighted in Section~\ref{sec:motivation}), this study evaluates whether wall-clock duration reliably predicts process-attributed energy draw across varying mesh workloads. Specifically, this experiment addresses Sub-question 2 by assessing the linearity of the time-energy relationship under deterministic ($\sigma = 0.0\,\text{m}$) execution conditions.
+To address the reliance on execution time as a proxy for energy consumption (as highlighted in Section~\ref{sec:motivation}), this study evaluates whether time-to-solution reliably predicts process-attributed energy draw across varying mesh resolutions. Specifically, this experiment addresses Sub-question 2 by assessing the linearity of the time-energy relationship under deterministic ($\sigma = 0.0\,\text{m}$) execution conditions.
 
 \subsection{Experimental Setup}
 
@@ -106,8 +104,8 @@ To accurately reflect the dynamic execution environment and evaluate the time-pr
 \paragraph{Data Filtration via Z-Scores:}
 In shared High-Performance Computing (HPC) environments, random background operating system spikes or node communication delays can cause execution stalls that do not reflect the solver's actual mathematical workload. To isolate the solver's true efficiency, Z-scores are computed for both total execution duration and energy-per-second. Runs exceeding a defined standard deviation threshold (e.g., $Z > 2.0$) are flagged as outliers and removed from the clean dataset. This ensures that the subsequent metrics evaluate the hydrodynamic solver rather than transient cluster traffic.
 
-\paragraph{Mean Average Power:}
-For each individual run, the average power draw (in Watts) is extracted by computing the slope of the cumulative energy timeline using an ordinary least squares regression. Calculating the mean ($\mu$) of this power draw across the ensemble establishes the true hardware baseline for each spatial resolution tier.
+\paragraph{Average Power:}
+For each ensemble, the mean power draw is defined as the slope of a linear regression line fit to the cumulative energy curve. Calculating the mean ($\mu$) of this power draw across the ensemble establishes the true hardware baseline for each spatial resolution tier.
 
 \paragraph{($R^2$) Coefficient of Determination:}
 This metric serves as the primary analytical tool to directly test the time-proxy assumption. Fundamental physical power modeling relies on the relationship:
@@ -126,7 +124,7 @@ To determine how varying computational workloads affect underlying hardware beha
 
 The telemetry data extracted from the ensembles provides three key observations regarding the validity of using execution time as an energy proxy.
 
-The raw telemetry data highlights potential cluster volatility before statistical filtering is applied. As shown in Figure~\ref{fig:proxy-fallacy}, tracking the total energy against execution duration for all iterations reveals instances of what appear to be execution stalls. While several outlier runs experienced extended durations, jumping from a baseline of under $10\,\text{s}$ to over $60\,\text{s}$, it is important to note that these iterations still yielded valid physical outputs. The exact underlying cause of their extended runtime is not definitively known. However, such delays could plausibly be caused by temporary I/O bottlenecks, background operating system tasks, or resource contention. Because the physical inputs were strictly identical across these iterations, algorithmic variations such as the solver dynamically reducing its timestep are highly unlikely to be the root cause. This is further supported by the disproportionately low power rate of these outliers, which suggests the hardware was idling rather than actively performing computations. Despite the increases in execution time between runs, the corresponding energy draw did not appear to scale proportionally, resulting in a degraded linear fit ($R^2 = 0.165$). This suggests that relying just on wall-clock time as an energy metric may be susceptible to external cluster interference. The Z-score filtering methodology was applied to identify and exclude these longer runs from the dataset to isolate the solver's active computational footprint.
+The raw telemetry data highlights potential cluster volatility before statistical filtering is applied. As shown in Figure~\ref{fig:proxy-fallacy}, tracking the total energy against execution duration for all iterations reveals instances of what appear to be execution stalls. While several outlier runs experienced extended durations, jumping from a baseline of under $10\,\text{s}$ to over $60\,\text{s}$, it is important to note that these iterations still yielded valid physical outputs. The exact underlying cause of their extended runtime is not definitively known. However, such delays could plausibly be caused by temporary I/O bottlenecks, background operating system tasks, or resource contention. Because the physical inputs were strictly identical across these iterations, algorithmic variations such as the solver dynamically reducing its timestep are highly unlikely to be the root cause. This is further supported by the disproportionately low average power draw of these outliers, which suggests the hardware was idling rather than actively performing computations. Despite the increases in execution time between runs, the corresponding energy draw did not appear to scale proportionally, resulting in a degraded linear fit ($R^2 = 0.165$). This suggests that relying just on wall-clock time as an energy metric may be susceptible to external cluster interference. The Z-score filtering methodology was applied to identify and exclude these longer runs from the dataset to isolate the solver's active computational footprint.
 
 \begin{figure}[H]
     \centering
@@ -135,7 +133,7 @@ The raw telemetry data highlights potential cluster volatility before statistica
     \label{fig:proxy-fallacy}
 \end{figure}
 
-After filtering the outliers, the clean dataset was evaluated to test if dynamic power remains constant across iterations. If energy consumption were primarily driven by execution duration, the filtered data would theoretically exhibit a highly linear correlation (near $R^2 = 1.0$). Figure~\ref{fig:proxy-fallacy-clean} reveals that even under clean and stable cluster conditions, this relationship remains surprisingly weak. The linear regression for the clean iterations yields a Coefficient of Determination of $R^2 = 0.518$. A value this low suggests that nearly half of the variance in energy consumption cannot be explained by the execution time alone. This divergence indicates that the solver's hardware usage, and therefore its dynamic power, fluctuates between iterations. Consequently, within the context of this study, time-to-solution appears to be an unreliable standalone proxy for total energy cost.
+After filtering the outliers, the clean dataset was evaluated to test if dynamic power remains constant across iterations. If energy consumption were primarily driven by execution duration, the filtered data would theoretically exhibit a highly linear correlation (near $R^2 = 1.0$). Figure~\ref{fig:proxy-fallacy-clean} reveals that even under clean and stable cluster conditions, this relationship remains surprisingly weak. The linear regression for the clean iterations yields a Coefficient of Determination of $R^2 = 0.518$. A value this low indicates that $48.2\%$ of the variance in energy consumption cannot be explained by execution time alone. This divergence indicates that the solver's hardware usage, and therefore its dynamic power, fluctuates between iterations. Consequently, within the context of this study, time-to-solution appears to be an unreliable standalone proxy for total energy cost.
 
 \begin{figure}[H]
     \centering
@@ -164,7 +162,7 @@ The underlying cause of this non-linearity is further clarified by examining the
   \label{tab:welch-ttest}
 \end{table}
 
-A Welch's t-test confirms that these shifts in hardware intensity are statistically significant ($p < 0.001$) across almost all workload transitions. The test also highlights an unexpected dynamic: the $12.0\,\text{m}$ resolution draws a significantly higher average power than the more complex $10.0\,\text{m}$ baseline ($t = -4.684$, $p < 0.001$). This suggests that a higher power draw may not strictly indicate a larger total mathematical workload, but could instead reflect higher hardware utilization efficiency. It is plausible that the array dimensions of the $12.0\,\text{m}$ grid align more optimally with the GPU's cache limits or thread block architecture. This alignment would decrease memory stalls, allowing the processing cores to operate at a higher, more continuous intensity per second despite having fewer total cells to compute. Conversely, the comparison between the two coarsest grids ($15.0\,\text{m}$ and $20.0\,\text{m}$) yielded no statistically significant difference in power draw ($t = 0.743$, $p = 0.458$). This implies that while grid resolution and hardware alignment actively influence dynamic power, the system's power usage might stabilize once the computational grid becomes sufficiently sparse.
+A Welch's t-test confirms that these shifts in hardware intensity are statistically significant ($p < 0.001$) across almost all workload transitions. The test also highlights an unexpected dynamic: the $12.0\,\text{m}$ resolution draws a significantly higher average power than the more complex $10.0\,\text{m}$ baseline ($t = -4.684$, $p < 0.001$). This suggests that a higher power draw may not strictly indicate a larger total mathematical workload, but could instead reflect higher hardware utilization efficiency. This higher efficiency likely stems from the array dimensions of the $12.0\,\text{m}$ grid aligning more favorably with the GPU's cache capacity or thread block layout. This alignment would decrease memory stalls, allowing the processing cores to operate at a higher, more continuous intensity per second despite having fewer total cells to compute. Conversely, the comparison between the two coarsest grids ($15.0\,\text{m}$ and $20.0\,\text{m}$) yielded no statistically significant difference in power draw ($t = 0.743$, $p = 0.458$). This implies that while grid resolution and hardware alignment actively influence dynamic power, the system's power usage might stabilize once the computational grid becomes sufficiently sparse.
 
 \begin{figure}[H]
     \centering
@@ -192,7 +190,7 @@ Five separate Monte Carlo ensembles were generated, each applying a different le
     \item \textbf{1.0\,m}: Represents older or lower-resolution legacy datasets (such as aerial radar mapping), which typically exhibit vertical errors of $1.0$ to $2.0\,\text{meters}$ \cite{ASPRS2015Standards}.
 \end{itemize}
 
-Each of the five ensembles consists of $100$ equiprobable realizations. This sample size strikes a practical balance between statistical accuracy and computational cost. It provides enough data points for the statistical metrics to stabilize, while keeping the total execution time and energy requirements manageable for GPU-accelerated solvers.
+Each of the five ensembles consists of $100$ equiprobable realizations. This sample size was selected as a computationally feasible benchmark to capture primary distributional trends while constraining total execution time and energy expenditure across the multiple noise tiers.
 
 To measure the physical impact of the input noise, the Quantity of Interest (QoI) was defined as the maximum water depth recorded at a specific spatial coordinate \texttt{[925.0, 605.0]}. 
 
@@ -203,7 +201,7 @@ To quantify the degradation of physical predictions as input data quality drops,
 \begin{itemize}
     \item \textbf{Mean ($\mu$):} Establishes the expected physical water depth (in meters) at the boundary coordinate for each noise tier.
     \item \textbf{Standard Deviation ($\sigma$):} Quantifies the absolute physical error introduced into the flow dynamics by the sensor noise.
-    \item \textbf{Coefficient of Variation (CV):} Normalizes the physical error relative to the mean depth. High $\text{CV}$ percentages at larger noise levels (e.g., $\sigma \ge 0.5\,\text{m}$) suggest a decline in the simulation's predictive reliability.
+    \item \textbf{Coefficient of Variation (CV):} Normalizes the absolute error relative to the mean depth ($\text{CV} = \frac{\sigma}{\mu}$), providing a dimensionless metric to evaluate relative uncertainty across different perturbation tiers.
 \end{itemize}
 
 
@@ -228,9 +226,9 @@ Table \ref{tab:study2-results} summarizes the statistical impact of topographica
   \label{tab:study2-results}
 \end{table}
 
-As expected, increasing the topographical noise ($\sigma_{\text{input}}$) directly degrades the certainty of the physical simulation. At high quality sensor resolutions ($\sigma = 0.05\,\text{m}$ and $0.1\,\text{m}$), the model output remains relatively stable, showing a CV below 15\%. However, as the DEM accuracy drops to levels typical of dense vegetation or older legacy datasets ($\sigma \ge 0.5\,\text{m}$), the predictive confidence drops considerably. At $\sigma = 1.0\,\text{m}$, the standard deviation of the water depth reaches $\pm 0.817\,\text{m}$, resulting in a CV of 74.21\%. For this specific coordinate, a variance this large suggests that localized flood predictions may become unreliable for risk assessment, as the margin of error approaches the predicted flood depth itself.
+As expected, increasing the topographical noise ($\sigma_{\text{input}}$) directly degrades the certainty of the physical simulation. At high-quality sensor resolutions ($\sigma = 0.05\,\text{m}$ and $0.1\,\text{m}$), the model output remains relatively stable, showing a CV below $15\%$. However, as the DEM accuracy drops to levels typical of dense vegetation or older legacy datasets ($\sigma \ge 0.5\,\text{m}$), relative uncertainty increases sharply, with the CV exceeding $50\%$. At $\sigma = 1.0\,\text{m}$, the standard deviation of the water depth reaches $\pm 0.817\,\text{m}$, resulting in a CV of $74.21\%$. For this specific coordinate, a variance this large suggests that localized flood predictions may become unreliable for risk assessment, as the margin of error approaches the predicted flood depth itself.
 
-While the increase of the standard deviation was anticipated, the behavior of the expected water depth provides an interesting observation. Because the injected Gaussian noise was strictly zero-mean ($\mu = 0$), one might expect the resulting mean water depth to remain relatively constant across the ensembles, with only the variance increasing. Instead, the data points to a potential systematic positive bias. The mean water depth rises from $0.739\,\text{m}$ at the lowest noise tier to $1.101\,\text{m}$ at the highest.
+While the increase of the standard deviation was anticipated, the behavior of the expected water depth reveals a distinct non-linear effect. Although the injected Gaussian noise was strictly zero-mean ($\mu = 0$), the ensemble mean water depth does not remain constant across ensembles. Instead, the mean water depth rises systematically from $0.739\,\text{m}$ at the lowest noise tier to $1.101\,\text{m}$ at the highest.
 
 This implies that, in this specific simulation, topographical noise causes more than just random fluctuations. The bumps and dips introduced by the noise likely act as synthetic dams and sinks and these artificial obstructions prevent natural drainage. As a result, the water pools and backs up into the gauge location, leading to the higher localized flood depths observed here.
 
@@ -262,7 +260,7 @@ As the standard deviation of the input noise ($\sigma$) increases, the simulated
 The standard deviation measures the spread of the energy in Joules. This metric quantifies how much the power draw swings from one individual iteration to the next, even when the overall noise distribution ($\sigma$) remains the same.
 
 \paragraph{90\% Confidence Interval (5th and 95th Percentiles):}
-To highlight the challenge this variance poses for large-scale risk assessment, the 90\% confidence interval of the total energy consumption is calculated. In shared HPC environments, researchers must allocate strict, predictable power and time budgets. If the upper bound (95th percentile) of the energy consumption diverges significantly from the mean at higher noise levels, it signals that running UQ ensembles can be unpredictable. This signals that one may not be able to simply profile a single iteration and accurately predict the maximum energy budget required for the full stochastic ensemble.
+This metric is selected to quantify the dispersion of total energy consumption across ensemble realizations and capture upper-bound computational demands. Evaluating the spread between the 5th and 95th percentiles provides a measure of resource variability while remaining robust against extreme statistical outliers.
 
 \subsection{Results of Study 3}
 
@@ -350,7 +348,7 @@ $1.00\,\text{m}$ & $228.62\,\text{J}$ & $222.91\,\text{J}$ & $\pm 52.85\,\text{J
 
 The combined telemetry data offers three key observations regarding how topographic uncertainty might propagate into computational energy metrics within the scope of this specific study.
 
-By evaluating both the median and the mean, the data reveals a distinction between the solver's theoretical efficiency and its actual operational cost. Across the ensembles, the mean is generally higher than the median. This right-skewed distribution suggests that while the solver's baseline energy cost remains relatively stable under typical conditions (represented by the median), a combination of transient cluster delays and complex local flow iterations creates a long tail of higher-energy outliers that elevate the mean energy consumption. Additionally, both metrics show a general upward trend as topographic noise increases. This suggests that as the injected noise creates artificially steep gradients, and SynxFlow likely shrinks its adaptive timestep to maintain numerical stability, which appears to incrementally increase the overall energy required to solve the simulation.
+By comparing the median and mean, the data reveals a distinction between the solver's typical operational cost and its upper-bound tail behavior. Across all ensembles, the mean consistently exceeds the median. This right-skewed distribution indicates that while the baseline energy draw remains stable under typical realizations, steep localized gradients trigger adaptive timestepping, producing a tail of higher-energy runs that elevates the mean. As input noise increases, the overall energy cost trends upward due to these increased numerical stability constraints.
 
 Beyond altering the average energy cost, higher topographic noise appears to degrade the predictability of the solver's energy footprint. The spread of energy consumption generally increases as the input noise increases. For the $0.05\,\text{m}$ and $0.20\,\text{m}$ tiers, the standard deviations are $37.15\,\text{J}$ and $31.00\,\text{J}$, respectively. However, at the $1.00\,\text{m}$ noise tier, the standard deviation expands to $52.85\,\text{J}$. This indicates that when a digital elevation model is highly uncertain, the computational energy required to process it might also become highly uncertain, leading to more run-to-run variance even within the exact same noise distribution.
 

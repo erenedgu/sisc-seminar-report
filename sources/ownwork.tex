@@ -18,23 +18,24 @@ The numerical simulations were executed on the MBD high-performance compute serv
 
 SynxFlow is an open-source Python package designed to simulate multi-hazard events, including flood inundation, landslide runouts, and debris flows \cite{Xia2025}. The flood solver relies on 2D shallow-water equations solved via Godunov-type shock-capturing finite volume methods \cite{Xia2017, Xia2025}. Crucially, SynxFlow addresses long-standing stability issues in shallow-water modeling through a Surface Reconstruction Method and an implicit friction discretization scheme \cite{Xia2017}. These improvements ensure the accurate calculation of slope source terms and maintain numerical stability even in the limit of disappearing water depths or across highly irregular topographies with abrupt slope changes \cite{Xia2017}. The software is divided into two distinct components: a high-performance C++/CUDA backend containing the physical solvers, and a Python Input/Output frontend that natively interfaces with standard libraries such as NumPy, Pandas, and Rasterio \cite{Xia2025, SynxFlowDocs2026}.
 
-SynxFlow was chosen as the target hydrodynamic simulation framework for this study due to several advantages that align with the evaluation of energy telemetry. First, SynxFlow utilizes a hybrid execution model where both the CPU and GPU are active. The shallow-water equations are offloaded to CUDA-enabled GPUs, while the host CPU executes the Python IO interface to process data, manage boundaries, and orchestrate the simulation \cite{Xia2025}. This creates a complex and concurrent hardware usage profile that demonstrates the necessity of the Alumet telemetry framework. Furthermore, because this orchestration is entirely script-based rather than relying on traditional, low-level configuration files, it enables extensive workflow automation \cite{Xia2025}.
+SynxFlow was chosen as the target hydrodynamic simulation framework for this study due to several advantages that align with the evaluation of energy telemetry. First, SynxFlow utilizes a hybrid execution model where both the CPU and GPU are active. The shallow-water equations are offloaded to CUDA-enabled GPUs, while the host CPU executes the Python IO interface to process data, manage boundaries, and orchestrate the simulation \cite{Xia2025}. This creates a heterogeneous and concurrent execution profile, making it a suitable candidate for evaluating process-level telemetry using Alumet. Furthermore, because this orchestration is entirely script-based rather than relying on traditional, low-level configuration files, it enables extensive workflow automation \cite{Xia2025}.
 
-\subsection{Energy Telemetry Framework}
+
+\subsection{Energy Measurement Framework}
 \label{sec:energy-telemetry-framework}
 
-To overcome the challenges mentioned in Section~\ref{sec:limitations-related-work}, this study utilizes Alumet, a lightweight and modular telemetry framework designed for high-precision local and distributed measurements \cite{Alumet}. Alumet addresses the limitations of traditional hardware sensors by operating a measurement pipeline that simultaneously gathers data from both low-level hardware components (such as Intel RAPL for CPUs or NVML for NVIDIA GPUs) and operating system interfaces (such as procfs or cgroups for software metrics) \cite{Alumet}.
+To overcome the challenges mentioned in Section~\ref{sec:limitations-related-work}, this study utilizes Alumet, a lightweight and modular framework designed for high-precision local and distributed measurements \cite{Alumet}. Alumet addresses the limitations of traditional hardware sensors by operating a measurement pipeline that simultaneously gathers data from both low-level hardware components (such as Intel RAPL for CPUs or NVML for NVIDIA GPUs) and operating system interfaces (such as procfs or cgroups for software metrics) \cite{Alumet}.
 
 Rather than relying only on power readings that also capture background cluster noise, Alumet leverages the energy-attribution plugin \cite{Alumet}. This plugin combines the total hardware energy consumption data with the process-specific hardware utilization metrics \cite{Alumet}. By scaling the total component energy by the specific CPU or GPU utilization percentage of a target process, the framework calculates the energy consumed for the isolated process.
 
 
 
-\section{Telemetry Integration and Experimental Workflow}
+\section{SynxFlow-Alumet Integration and Experimental Workflow}
 \label{sec:workflow}
 
 SynxFlow and Alumet operate as separate software tools without interoperability. To bridge this gap, a custom Python-based framework was developed to combine the two tools into an automated experimental pipeline \cite{EdguCorrea2026TopographicUQ}.
 
-The workflow is structured around a configurable Monte Carlo loop. In each iteration, a distinct Gaussian noise perturbation is applied to the original DEM. Then the Synxflow solver is executed and energy profiling is done using Alumet, before accumulated telemetry and hazard data across the ensemble are mathematically post-processed.
+The workflow is structured around a configurable Monte Carlo loop. In each iteration, a distinct Gaussian noise perturbation is applied to the original DEM. Then the Synxflow solver is executed and energy profiling is done using Alumet, before accumulated telemetry and flood solver data across the ensemble are post-processed.
 
 \subsection{Single-Run Pipeline}
 \label{sec:single-run}
@@ -61,7 +62,7 @@ Once the perturbed DEM is generated, the orchestration script configures the phy
 
 With the physical domain established, the orchestration framework finalizes the starting conditions by assigning initial water depths ($h_0$) and placing a spatial observation gauge to track water height over time. Once all environmental parameters are compiled, the simulation is dispatched. During this phase, Synxflow, as mentioned before, utilizes a heterogeneous hardware model. The host CPU orchestrates the data pipeline and input/output operations, while the computationally intensive 2D shallow-water equations are offloaded to CUDA-enabled GPUs for parallel processing.
 
-Simultaneously, the Alumet framework operates as a background daemon to continuously capture the hardware's energy footprint. Dictated by the Alumet configuration file, the agent polls host operating system metrics and CPU registers every $50\,\text{ms}$ to measure processor utilization and power draw. Concurrently, it polls the NVIDIA GPUs every $200\,\text{ms}$ to log board-level power consumption and Streaming Multiprocessor utilization. The $50\,\text{ms}$ CPU polling interval balances power tracking against reading overhead, while $200\,\text{ms}$ was selected for GPU telemetry to stay within NVML query limits.
+Simultaneously, the Alumet framework operates as a background daemon to continuously capture the hardware's energy footprint. Dictated by the Alumet configuration file, the agent polls host operating system metrics and CPU registers every $50\,\text{ms}$ to measure processor utilization and power draw. Concurrently, it polls the NVIDIA GPUs every $200\,\text{ms}$ to log board-level power consumption and Streaming Multiprocessor utilization.The $50\,\text{ms}$ CPU polling interval provides high temporal resolution to capture rapid power fluctuations without generating excessive log volume, whereas $200\,\text{ms}$ was selected for GPU telemetry to stay within NVML query limits.
 
 Crucially, rather than recording raw, unattributed node-level energy that includes background system noise, the framework employs a mathematical attribution model to isolate the simulation's exact footprint. For instance, the process-attributed GPU energy is dynamically computed at each time step as:
 
@@ -76,7 +77,7 @@ This concurrent execution methodology ensures that the completion of every singl
 \subsection{Ensemble Creation}
 \label{sec:ensemble-orchestration}
 
-While the single-run pipeline defines the core execution of an individual simulation, evaluating the impact of topographical uncertainty requires scaling this process into a probabilistic framework. To achieve this, an orchestration framework automates the single-iteration pipeline across a configurable Monte Carlo ensemble, as illustrated in Figure~\ref{fig:ensemble_pipeline}. 
+While the single-run pipeline defines the core execution of an individual simulation, evaluating the impact of topographical uncertainty requires scaling this process into an ensemble. To achieve this, an orchestration framework automates the single-iteration pipeline across a configurable Monte Carlo ensemble, as illustrated in Figure~\ref{fig:ensemble_pipeline}. 
 
 \begin{figure}[H]
   \centering
@@ -98,8 +99,8 @@ Following the completion of the automated ensemble loop, the post-processing scr
 
 To isolate SynxFlow's exact energy footprint from background operating system noise, the script performs dynamic Process ID (PID) tracking. Because Alumet logs performance metrics for the entire compute node, execution logs are parsed to identify the specific PID assigned to the SynxFlow solver during each iteration. Filtering the raw Alumet telemetry by this PID extracts only the process-attributed energy.
 
-To resolve the sampling rate, where Alumet polls CPU metrics every $50\,\text{ms}$ while GPU metrics update every $200\,\text{ms}$, the script performs timeline synchronization. It constructs a master chronological timeline and linearly interpolates both energy streams onto this unified axis. Linear interpolation was selected over standard polynomial splines because it guarantees monotonicity in cumulative energy summation and avoids artificial overshooting between discrete sampling points. This ensures that cumulative CPU and GPU energy footprints are aligned with each other.
+To resolve the sampling rate, where Alumet polls CPU metrics every $50\,\text{ms}$ while GPU metrics update every $200\,\text{ms}$, the script performs timeline synchronization. It constructs a master chronological timeline and linearly interpolates both energy streams onto this unified axis. Linear interpolation was selected over standard polynomial splines because it guarantees monotonicity in cumulative energy and avoids artificial overshooting between discrete sampling points. This ensures that cumulative CPU and GPU energy footprints are aligned with each other.
 
-In parallel with hardware profiling, the script evaluates hazard uncertainty. Water depth time series recorded at the designated observation points are aggregated across all ensemble iterations. From these datasets, the script derives probability density distributions of localized water depths, quantifying how initial topographical noise translates into flood uncertainty.
+In parallel with hardware profiling, the script evaluates hazard uncertainty. The maximum water depth ($h_{\text{max}}$) at designated observation points is extracted for each ensemble iteration. From these datasets, the script derives probability density distributions of peak water depths, quantifying how initial topographical noise translates into uncertainty.
 
 Finally, the script computes ensemble statistics and generates analytical plots for cumulative energy over time, per-iteration energy costs, and energy distributions.
