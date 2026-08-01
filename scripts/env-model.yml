@@ -1,0 +1,12 @@
+name: env-model
+channels:
+  - conda-forge
+dependencies:
+  - python=3.10
+  - numpy<2
+  - pandas<3
+  - pyyaml
+  - setuptools<70
+  - pip
+  - pip:
+    - synxflow

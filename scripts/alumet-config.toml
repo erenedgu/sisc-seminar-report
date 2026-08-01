@@ -1,0 +1,86 @@
+# CSV Output Plugin
+[plugins.csv]
+output_path = "alumet-output.csv"
+force_flush = true
+append_unit_to_metric_name = true
+use_unit_display_name = true
+csv_delimiter = ";"
+csv_late_delimiter = ","
+
+# Procfs Plugin
+[plugins.procfs.kernel]
+enabled = true
+poll_interval = "50ms"
+
+[plugins.procfs.memory]
+enabled = true
+poll_interval = "50ms"
+metrics = [
+    "MemTotal",
+    "MemFree",
+    "MemAvailable",
+    "Cached",
+    "SwapCached",
+    "Active",
+    "Inactive",
+    "Mapped",
+]
+
+[plugins.procfs.network]
+enabled = false
+poll_interval = "50ms"
+
+[plugins.procfs.processes]
+enabled = true
+refresh_interval = "50ms"
+strategy = "event"
+
+[[plugins.procfs.processes.groups]]
+exe_regex = ""
+poll_interval = "50ms"
+flush_interval = "1s"
+memory_mode = "quick"
+
+[plugins.procfs.processes.events]
+poll_interval = "50ms"
+flush_interval = "1s"
+memory_mode = "quick"
+
+# RAPL Plugin (CPU energy)
+[plugins.rapl]
+poll_interval = "50ms"
+flush_interval = "1s"
+no_perf_events = false
+
+# NVML Plugin
+[plugins.nvml]
+poll_interval = "200ms"
+flush_interval = "1s"
+skip_failed_devices = true
+mode = "full"
+
+# Energy Attribution Plugin
+[plugins.energy-attribution]
+enabled = true
+
+[plugins.energy-attribution.formulas.attributed_energy_cpu]
+expr = "cpu_energy * (cpu_usage / 100.0) / 96.0"
+ref = "cpu_energy"
+retention_time = "1s"
+
+[plugins.energy-attribution.formulas.attributed_energy_cpu.per_resource]
+cpu_energy = { metric = "rapl_consumed_energy", resource_kind = "local_machine", domain = "package_total" }
+
+[plugins.energy-attribution.formulas.attributed_energy_cpu.per_consumer]
+cpu_usage = { metric = "cpu_percent", kind = "total" }
+
+[plugins.energy-attribution.formulas.attributed_energy_gpu]
+expr = "gpu_energy * gpu_usage / 100.0 / 1000.0"
+ref = "gpu_energy"
+retention_time = "1s"
+
+[plugins.energy-attribution.formulas.attributed_energy_gpu.per_resource]
+gpu_energy = { metric = "nvml_energy_consumption" }
+
+[plugins.energy-attribution.formulas.attributed_energy_gpu.per_consumer]
+gpu_usage = { metric = "nvml_sm_utilization" }

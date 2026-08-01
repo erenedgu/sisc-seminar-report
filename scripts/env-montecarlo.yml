@@ -1,0 +1,9 @@
+name: env-montecarlo
+channels:
+  - conda-forge
+dependencies:
+  - python
+  - numpy
+  - scipy
+  - pyyaml
+  - rasterio
