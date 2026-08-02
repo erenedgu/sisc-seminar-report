@@ -57,13 +57,13 @@ micromamba env create -f environment.yml -n env-energy-analysis
 
 #### Step 3: Run the Analysis Script
 
-Execute the main post-processing and plotting script via Micromamba:
+Execute the plotting script via Micromamba:
 
 ```bash
 micromamba run -n env-energy-analysis python scripts/analyze_energy_proxy.py
 ```
 
-Once execution completes, all generated figures will be saved in the `plots/` directory.
+Once execution completes, generated figures will be saved in the `plots/` directory.
 
 ---
 
