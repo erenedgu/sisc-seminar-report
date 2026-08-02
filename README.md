@@ -24,12 +24,6 @@ This repository contains a LaTeX-based seminar report on soft sensors for measur
 </a>
 
 
-## Overview
-
-
-The repository is built around a main LaTeX document, with content split into chapter files under the sources directory. It also includes supporting assets such as bibliography entries, figures, and Python scripts used for analysis or plotting.
-
-
 ## Reproducibility and Generating Results
 
 This repository also contains the configuration files, post-processing scripts, and raw telemetry data required to generate the figures and analyses for the seminar report. 
