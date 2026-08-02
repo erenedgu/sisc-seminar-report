@@ -26,9 +26,9 @@ This repository contains a LaTeX-based seminar report on soft sensors for measur
 
 ## Reproducibility and Generating Results
 
-This repository also contains the configuration files, post-processing scripts, and raw telemetry data required to generate the figures and analyses for the seminar report. 
+This repository also contains the configuration files, post-processing scripts, and raw telemetry data required to generate the figures and analyses. 
 
-> **Note:** The full simulation execution framework (the SynxFlow solver and Alumet orchestration) is maintained in the [main project repository](https://github.com/thealanjason/topographic_uq_energy). To save setup time, this report repository is structured strictly for document compilation and data post-processing.
+> **Note:** The full simulation execution framework (SynxFlow and Alumet) is maintained in the [main project repository](https://github.com/thealanjason/topographic_uq_energy). To save setup time, this report repository is structured strictly for document compilation and data post-processing.
 
 ---
 
