@@ -1,4 +1,4 @@
-Copyright (c) 2026 Alan Correa
+Copyright (c) 2026 Alan Correa, Eren Edgü
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
