@@ -72,6 +72,11 @@ Once execution completes, generated figures will be saved in the `plots/` direct
 To execute full Monte Carlo ensembles and generate new telemetry data from scratch:
 
 1. Clone the [main project repository](https://github.com/thealanjason/topographic_uq_energy) containing the live SynxFlow and Alumet integration.
-2. Copy the configuration setups from `configs/` and the execution scripts from `scripts/` in this repository.
+2. Copy the configuration setups and the execution scripts from `scripts/` in this repository.
 3. Replace the corresponding files in the main project repository's structure.
 4. Run the simulation pipeline within the main project environment.
+
+
+## Support & Feedback
+
+For questions, feedback, or troubleshooting regarding this repository, please [open an issue on GitHub](https://github.com/erenedgu/sisc-seminar-report/issues).
