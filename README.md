@@ -80,3 +80,8 @@ To execute full Monte Carlo ensembles and generate new telemetry data from scrat
 ## Support & Feedback
 
 For questions, feedback, or troubleshooting regarding this repository, please [open an issue on GitHub](https://github.com/erenedgu/sisc-seminar-report/issues).
+
+
+
+## License
+This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details.
